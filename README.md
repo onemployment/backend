@@ -1,6 +1,6 @@
-# Lendesk Assignment - Authentication API
+# Backend - Authentication API
 
-A secure, production-ready Node.js TypeScript API service that implements user authentication with Redis data persistence. Built with clean architecture principles, comprehensive testing, and modern development practices.
+A secure, production-ready Node.js TypeScript API service that implements user authentication with Redis data persistence. Built with clean architecture principles, comprehensive testing, modern development practices, and automated CI/CD deployment to AWS.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ A secure, production-ready Node.js TypeScript API service that implements user a
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
 - [Configuration](#configuration)
-- [Deployment](#deployment)
+- [CI/CD & Deployment](#cicd--deployment)
 - [Contributing](#contributing)
 
 ## Features
@@ -68,8 +68,8 @@ A secure, production-ready Node.js TypeScript API service that implements user a
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd lendesk-assignment
+git clone https://github.com/onemployment/backend.git
+cd backend
 ```
 
 ### 2. Environment Setup
@@ -360,13 +360,59 @@ SALT_ROUNDS=12
 - Validation of required environment variables at startup
 - Type-safe configuration access throughout the application
 
-## Development Workflow
+## CI/CD & Deployment
+
+### GitHub Actions Workflow
+
+The project includes a comprehensive CI/CD pipeline that automatically:
+
+**Continuous Integration (CI)**
+
+- Runs on every push and pull request to main branch
+- Executes linting, formatting, building, and testing
+- Uses Redis 8-alpine service container for integration tests
+- Validates code quality with ESLint and Prettier
+
+**Continuous Deployment (CD)**
+
+- Deploys to AWS ECR in us-east-2 region on successful main branch pushes
+- Uses OIDC authentication for secure AWS access
+- Builds and pushes Docker images with both `latest` and commit SHA tags
+- Images available at: `062440546828.dkr.ecr.us-east-2.amazonaws.com/onemployment/api`
+
+### AWS Infrastructure
+
+**ECR Repository**
+
+- Region: us-east-2
+- Repository: `onemployment/api`
+- Supports both latest and SHA-tagged images
+
+**IAM Permissions**
+
+- GitHub Actions role with comprehensive AWS service access
+- ECR, ECS, S3, CloudWatch, and CodeDeploy permissions
+- PowerUser access for future service integrations
+
+### Workflow Status
+
+Check the [Actions tab](https://github.com/onemployment/backend/actions) for current build status and deployment history.
+
+## Contributing
+
+### Development Workflow
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make changes following the coding standards
-4. Run tests: `npm test`
-5. Run linting: `npm run lint`
-6. Format code: `npm run format`
-7. Commit changes with descriptive messages
-8. Push to your fork and create a pull request
+4. Run validation sequence:
+   ```bash
+   npm run lint      # ESLint validation
+   npm run build     # TypeScript compilation
+   npm run test:unit # Unit tests
+   npm run test:int  # Integration tests
+   npm run format:check # Prettier formatting
+   ```
+5. Commit changes with descriptive messages following CLAUDE.md template
+6. Push to your fork and create a pull request
+7. CI/CD pipeline will automatically validate and deploy on merge to main
