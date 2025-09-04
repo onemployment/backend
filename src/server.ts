@@ -20,6 +20,9 @@ export const createApp = (dependencies: AppDependencies): Application => {
   );
   app.use(express.json());
   app.get('/health', healthCheckHandler);
+  app.get('/version', (req, res) =>
+    res.json({ version: '1.0.1', build: new Date().toISOString() })
+  );
   app.use('/api/v1', createApiRouter(dependencies));
   app.use(errorHandler);
 

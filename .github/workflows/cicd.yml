@@ -90,3 +90,28 @@ jobs:
           echo "Image pushed to ECR:"
           echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_LATEST"
           echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_SHA"
+
+      - name: Deploy to Amazon ECS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: onemployment/api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Update ECS service to trigger deployment with new image
+          aws ecs update-service \
+            --cluster onemployment-cluster \
+            --service backend-service \
+            --force-new-deployment \
+            --region us-east-2
+
+          echo "ECS service deployment triggered"
+          echo "Image deployed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          # Wait for deployment to stabilize
+          echo "Waiting for service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster onemployment-cluster \
+            --services backend-service \
+            --region us-east-2
+
+          echo "Deployment completed successfully!"
