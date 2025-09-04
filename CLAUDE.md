@@ -33,3 +33,14 @@ Each step comes after passing of the previous step.
   - Focus on what was changed, added, or removed
   - Keep each bullet point brief and specific
   - Use present tense for actions
+
+## Commit Workflow
+
+When preparing to commit changes, follow this standardized workflow:
+
+1. **Review commit template**: Reference the commit message template rules above
+2. **Analyze local changes**: Compare current branch changes with the remote branch to understand what has been modified
+3. **Prepare commit message**: Create a commit message following the Commit Template Rules with:
+   - Concise imperative title summarizing the change
+   - Bullet points detailing specific modifications made
+4. **Execute commit and push**: Stage all changes, commit with the exact prepared message, and push to the current branch's remote
