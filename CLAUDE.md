@@ -29,7 +29,7 @@ Each step comes after passing of the previous step.
 - all commit messages should use this following rules:
 
 - **Title**: Concise imperative sentence describing the change
-- **Description**: Bullet points without emojis or Claude collaboration lines
+- **Description**: Bullet points using "-" without emojis or Claude collaboration lines
   - Focus on what was changed, added, or removed
   - Keep each bullet point brief and specific
   - Use present tense for actions

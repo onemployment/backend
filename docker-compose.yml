@@ -3,7 +3,7 @@ version: '3.8'
 services:
   redis:
     image: redis:8-alpine
-    container_name: lendesk-redis
+    container_name: redis
     ports:
       - '6379:6379'
     restart: unless-stopped
@@ -14,8 +14,8 @@ services:
       retries: 5
 
   backend:
-    container_name: lendesk-backend
-    image: lendesk-backend
+    container_name: backend
+    image: backend
     build: .
     ports:
       - '3000:3000'

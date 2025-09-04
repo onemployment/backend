@@ -1,5 +1,5 @@
 {
-  "name": "lendesk-assignment",
+  "name": "backend",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev:build": "docker compose up --build -d",
     "dev:start": "docker compose up -d",
     "dev:stop": "docker compose down",
-    "dev:clean": "docker compose down && docker rmi lendesk-backend redis:8-alpine",
+    "dev:clean": "docker compose down && docker rmi backend redis:8-alpine",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --selectProjects unit",
