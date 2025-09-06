@@ -4,6 +4,7 @@ import cors from 'cors';
 import { createApiRouter, AppDependencies } from './api';
 import { healthCheckHandler } from './utils';
 import { errorHandler } from './middleware/error-handler.middleware';
+import { config } from './config';
 
 export const createApp = (dependencies: AppDependencies): Application => {
   const app = express();
@@ -11,10 +12,13 @@ export const createApp = (dependencies: AppDependencies): Application => {
   app.use(helmet());
   app.use(
     cors({
-      origin: process.env.NODE_ENV === 'production' ? false : true,
-      methods: ['GET', 'POST'],
-      allowedHeaders: ['Content-Type'],
-      credentials: false,
+      origin:
+        config.environment === 'production'
+          ? 'https://www.onemployment.org'
+          : true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      credentials: true,
       maxAge: 86400,
     })
   );
