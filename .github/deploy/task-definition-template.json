@@ -1,0 +1,93 @@
+{
+  "family": "onemployment-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::062440546828:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::062440546828:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "${ECR_IMAGE_URI}",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "command": ["sh", "-c", "npx prisma migrate deploy && npm start"],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "PORT",
+          "value": "3000"
+        },
+        {
+          "name": "HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "DB_SSL",
+          "value": "require"
+        },
+        {
+          "name": "SALT_ROUNDS",
+          "value": "12"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "POSTGRES_DB_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:POSTGRES_DB_URL::"
+        },
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:DB_HOST::"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:DB_PORT::"
+        },
+        {
+          "name": "DB_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:DB_NAME::"
+        },
+        {
+          "name": "DB_USER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:DB_USER::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:DB_PASSWORD::"
+        },
+        {
+          "name": "REDIS_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:REDIS_URL::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/onemployment-backend",
+          "awslogs-region": "us-east-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:3000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

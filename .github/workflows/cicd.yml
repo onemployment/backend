@@ -91,20 +91,40 @@ jobs:
           echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_LATEST"
           echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_SHA"
 
+      - name: Update ECS Task Definition
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: onemployment/api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Generate task definition from template
+          ECR_IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          sed "s|\${ECR_IMAGE_URI}|$ECR_IMAGE_URI|g" .github/deploy/task-definition-template.json > task-definition.json
+
+          echo "Generated task definition with image: $ECR_IMAGE_URI"
+
       - name: Deploy to Amazon ECS
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: onemployment/api
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Update ECS service to trigger deployment with new image
+          # Register new task definition
+          TASK_DEFINITION_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "Registered new task definition: $TASK_DEFINITION_ARN"
+
+          # Update ECS service to use new task definition
           aws ecs update-service \
             --cluster onemployment-cluster \
             --service backend-service \
-            --force-new-deployment \
+            --task-definition "$TASK_DEFINITION_ARN" \
             --region us-east-2
 
-          echo "ECS service deployment triggered"
+          echo "ECS service updated with new task definition"
           echo "Image deployed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
           # Wait for deployment to stabilize
