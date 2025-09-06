@@ -1,49 +1,72 @@
-import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
-import { createClient, RedisClientType } from 'redis';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
 import { logger } from '../../../src/common/logger/logger';
 
 declare global {
-  var redisContainer: StartedRedisContainer;
-  var redisClient: RedisClientType;
+  var postgresContainer: StartedPostgreSqlContainer;
+  var prismaClient: PrismaClient;
 }
 
-const globalWithRedis = global as typeof globalThis & {
-  redisContainer: StartedRedisContainer;
-  redisClient: RedisClientType;
+const globalWithPostgres = global as typeof globalThis & {
+  postgresContainer: StartedPostgreSqlContainer;
+  prismaClient: PrismaClient;
 };
 
 beforeAll(async () => {
-  logger.info('Starting Redis container for integration tests...');
+  logger.info('Starting PostgreSQL container for integration tests...');
 
-  globalWithRedis.redisContainer = await new RedisContainer('redis:8-alpine')
-    .withExposedPorts(6379)
+  globalWithPostgres.postgresContainer = await new PostgreSqlContainer(
+    'postgres:15.8-alpine'
+  )
+    .withDatabase('test_onemployment')
+    .withUsername('test_user')
+    .withPassword('test_password')
+    .withExposedPorts(5432)
     .start();
 
-  const redisUrl = `redis://localhost:${globalWithRedis.redisContainer.getMappedPort(6379)}`;
-  logger.info(`Redis container started at: ${redisUrl}`);
+  const databaseUrl = globalWithPostgres.postgresContainer.getConnectionUri();
+  logger.info(`PostgreSQL container started at: ${databaseUrl}`);
 
-  globalWithRedis.redisClient = createClient({ url: redisUrl });
-  await globalWithRedis.redisClient.connect();
+  globalWithPostgres.prismaClient = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+  });
 
-  logger.info('Connected to test Redis instance');
-}, 60000);
+  await globalWithPostgres.prismaClient.$connect();
+
+  // Push schema to test database
+  const { execSync } = require('child_process');
+  execSync('npx prisma db push --force-reset', {
+    stdio: 'inherit',
+    env: { ...process.env, POSTGRES_DB_URL: databaseUrl },
+  });
+
+  logger.info('Connected to test PostgreSQL instance and ran migrations');
+}, 120000);
 
 afterAll(async () => {
-  logger.info('Cleaning up Redis container...');
+  logger.info('Cleaning up PostgreSQL container...');
 
-  if (globalWithRedis.redisClient) {
-    await globalWithRedis.redisClient.disconnect();
+  if (globalWithPostgres.prismaClient) {
+    await globalWithPostgres.prismaClient.$disconnect();
   }
 
-  if (globalWithRedis.redisContainer) {
-    await globalWithRedis.redisContainer.stop();
+  if (globalWithPostgres.postgresContainer) {
+    await globalWithPostgres.postgresContainer.stop();
   }
 
-  logger.info('Redis container cleanup completed');
+  logger.info('PostgreSQL container cleanup completed');
 }, 30000);
 
 afterEach(async () => {
-  if (globalWithRedis.redisClient) {
-    await globalWithRedis.redisClient.flushDb();
+  if (globalWithPostgres.prismaClient) {
+    // Clean up test data after each test
+    await globalWithPostgres.prismaClient.user.deleteMany({});
   }
 });

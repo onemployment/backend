@@ -4,46 +4,17 @@ import { AuthService } from '../../../src/api/auth/auth.service';
 import { AuthController } from '../../../src/api/auth/auth.controller';
 import { AuthRepository } from '../../../src/api/auth/auth.repository';
 import { BcryptStrategy } from '../../../src/api/auth/strategies/BcryptStrategy';
-import { RedisClientType } from 'redis';
-import { RedisClient, RedisMulti } from '../../../src/infra/redis/client';
-
-class RedisClientAdapter implements RedisClient {
-  constructor(private rawClient: RedisClientType) {}
-
-  multi(): RedisMulti {
-    return this.rawClient.multi() as RedisMulti;
-  }
-
-  async hGetAll(key: string): Promise<Record<string, string>> {
-    return this.rawClient.hGetAll(key);
-  }
-
-  async get(key: string): Promise<string | null> {
-    return this.rawClient.get(key);
-  }
-
-  async connect(): Promise<void> {
-    await this.rawClient.connect();
-  }
-
-  async disconnect(): Promise<void> {
-    await this.rawClient.disconnect();
-  }
-
-  async quit(): Promise<void> {
-    await this.rawClient.quit();
-  }
-}
+import { PrismaClient } from '@prisma/client';
 
 export interface TestAppSetup {
   app: Application;
   authService: AuthService;
   authRepository: AuthRepository;
+  prismaClient: PrismaClient;
 }
 
-export const createTestApp = (redisClient: RedisClientType): TestAppSetup => {
-  const redisAdapter = new RedisClientAdapter(redisClient);
-  const authRepository = new AuthRepository(redisAdapter);
+export const createTestApp = (prismaClient: PrismaClient): TestAppSetup => {
+  const authRepository = new AuthRepository(prismaClient);
   const passwordStrategy = new BcryptStrategy(12);
   const authService = new AuthService(authRepository, passwordStrategy);
   const authController = new AuthController(authService);
@@ -53,6 +24,7 @@ export const createTestApp = (redisClient: RedisClientType): TestAppSetup => {
     app,
     authService,
     authRepository,
+    prismaClient,
   };
 };
 

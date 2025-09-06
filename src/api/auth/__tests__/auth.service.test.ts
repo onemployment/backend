@@ -1,7 +1,7 @@
 import { AuthService } from '../auth.service';
 import { IAuthRepository } from '../auth.repository';
 import { IPasswordStrategy } from '../strategies/IPasswordStrategy';
-import { User } from '../auth.model';
+import { User } from '@prisma/client';
 import {
   ConflictError,
   UnauthorizedError,

@@ -5,26 +5,31 @@ import { AuthService } from './api/auth/auth.service';
 import { AuthController } from './api/auth/auth.controller';
 import { BcryptStrategy } from './api/auth/strategies/BcryptStrategy';
 import { RedisClientService } from './infra/redis/client';
+import { PrismaClient } from '@prisma/client';
 import { config } from './config';
 import { logger } from './common/logger/logger';
 
-interface ServerWithRedisClient extends http.Server {
+interface ServerWithClients extends http.Server {
   redisClient?: RedisClientService;
+  prismaClient?: PrismaClient;
 }
 
-async function bootstrap(): Promise<ServerWithRedisClient> {
+async function bootstrap(): Promise<ServerWithClients> {
   const redisClient = new RedisClientService(config.redisUrl);
+  const prismaClient = new PrismaClient();
+
   try {
     await redisClient.connect();
+    await prismaClient.$connect();
   } catch (error) {
-    logger.error('Bootstrap failed: Redis connection error:', {
+    logger.error('Bootstrap failed: Database connection error:', {
       error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
 
   const passwordStrategy = new BcryptStrategy(config.saltRounds);
-  const authRepository = new AuthRepository(redisClient);
+  const authRepository = new AuthRepository(prismaClient);
   const authService = new AuthService(authRepository, passwordStrategy);
   const authController = new AuthController(authService);
 
@@ -34,7 +39,7 @@ async function bootstrap(): Promise<ServerWithRedisClient> {
     logger.info(
       `HTTP server started on ${config.host}:${config.port} (env: ${config.environment})`
     );
-  }) as ServerWithRedisClient;
+  }) as ServerWithClients;
 
   server.on('error', (err) => {
     logger.error('HTTP server error:', { err });
@@ -42,6 +47,7 @@ async function bootstrap(): Promise<ServerWithRedisClient> {
   });
 
   server.redisClient = redisClient;
+  server.prismaClient = prismaClient;
 
   return server;
 }
@@ -76,6 +82,19 @@ async function bootstrap(): Promise<ServerWithRedisClient> {
                 : String(quitError),
           });
           await server.redisClient.disconnect();
+        }
+      }
+
+      if (server.prismaClient) {
+        try {
+          await server.prismaClient.$disconnect();
+        } catch (disconnectError) {
+          logger.error('Prisma disconnect failed:', {
+            error:
+              disconnectError instanceof Error
+                ? disconnectError.message
+                : String(disconnectError),
+          });
         }
       }
 

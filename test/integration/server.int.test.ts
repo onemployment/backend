@@ -1,11 +1,12 @@
 import request from 'supertest';
 import { Application } from 'express';
 import { createTestApp, createTestUser, TestAppSetup } from './helpers/utils';
-import { StartedRedisContainer } from '@testcontainers/redis';
+import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
 
-const globalWithRedis = global as typeof globalThis & {
-  redisContainer: StartedRedisContainer;
-  redisClient: import('redis').RedisClientType;
+const globalWithPostgres = global as typeof globalThis & {
+  postgresContainer: StartedPostgreSqlContainer;
+  prismaClient: PrismaClient;
 };
 
 describe('Server Integration Tests', () => {
@@ -13,7 +14,7 @@ describe('Server Integration Tests', () => {
   let app: Application;
 
   beforeEach(() => {
-    testSetup = createTestApp(globalWithRedis.redisClient);
+    testSetup = createTestApp(globalWithPostgres.prismaClient);
     app = testSetup.app;
   });
 
@@ -195,7 +196,7 @@ describe('Server Integration Tests', () => {
     });
   });
 
-  describe('Redis Integration', () => {
+  describe('Database Integration', () => {
     it('should persist user data across requests', async () => {
       const userData = {
         username: 'persistentuser',
@@ -213,20 +214,25 @@ describe('Server Integration Tests', () => {
       expect(storedUser).toBeTruthy();
       expect(storedUser!.username).toBe(userData.username);
 
-      const usernameKey = `username:${userData.username}`;
-      const usernameMapping =
-        await globalWithRedis.redisClient.get(usernameKey);
-      expect(usernameMapping).toBeTruthy();
+      // Verify data exists in database
+      const dbUser = await testSetup.prismaClient.user.findUnique({
+        where: { username: userData.username },
+      });
+      expect(dbUser).toBeTruthy();
+      expect(dbUser!.username).toBe(userData.username);
     });
 
-    it('should handle Redis connection gracefully', async () => {
-      expect(globalWithRedis.redisClient.isOpen).toBe(true);
+    it('should handle database connection gracefully', async () => {
+      // Verify Prisma client is connected
+      await expect(
+        testSetup.prismaClient.$queryRaw`SELECT 1`
+      ).resolves.toBeDefined();
 
       const response = await request(app)
         .post('/api/v1/auth/register')
         .send({
-          username: 'redisuser',
-          password: 'redispassword123',
+          username: 'dbuser',
+          password: 'dbpassword123',
         })
         .expect(201);
 
