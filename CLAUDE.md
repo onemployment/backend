@@ -65,3 +65,42 @@ When preparing to commit changes, follow this standardized workflow:
    - Concise imperative title summarizing the change
    - Bullet points detailing specific modifications made
 4. **Execute commit and push**: Stage all changes, commit with the exact prepared message, and push to the current branch's remote
+
+## Issue Template
+
+### What
+
+Describe what needs to be done or what problem needs to be solved.
+
+### Why
+
+Explain the business value, user need, or technical necessity behind this issue.
+
+### How
+
+Outline the general approach or solution strategy for addressing this issue.
+
+### Implementation Plan
+
+- [ ] Specific task 1
+- [ ] Specific task 2
+- [ ] Specific task 3
+- [ ] Testing and validation
+- [ ] Documentation updates
+
+### AI Agent Prompt
+
+**[Context]**
+Provide relevant background information about the codebase, current state, and any related systems or dependencies.
+
+**[Task]**
+Clearly define the specific work that needs to be completed.
+
+**[Expectation]**
+Describe the expected outcomes, deliverables, and success criteria.
+
+**[Constraints]**
+List any limitations, requirements, or restrictions that must be considered.
+
+**[Validation]**
+Define how the completed work should be tested and verified as successful.

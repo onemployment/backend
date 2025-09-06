@@ -10,7 +10,7 @@ dist/
 # Environment variables
 .env
 .env.*
-!.env.example
+!.env.template
 
 # OS-specific files
 .DS_Store
@@ -22,3 +22,4 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+/src/generated/prisma

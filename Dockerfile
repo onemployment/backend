@@ -9,6 +9,10 @@ COPY package*.json ./
 
 RUN npm ci
 
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
+RUN npx prisma generate
+
 COPY . .
 
 RUN npm run build

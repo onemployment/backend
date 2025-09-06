@@ -34,7 +34,8 @@ A secure, production-ready Node.js TypeScript API service that implements user a
 
 - Node.js 23+ with TypeScript 5.9
 - Express.js 5.1 for HTTP server and routing
-- Redis 8 for data persistence
+- PostgreSQL 15.8 with Prisma ORM for data persistence
+- Redis 8 for caching and session management
 
 **Security & Validation**
 
@@ -42,6 +43,12 @@ A secure, production-ready Node.js TypeScript API service that implements user a
 - Zod for request/response validation
 - Helmet for security headers
 - CORS for cross-origin protection
+
+**Database & ORM**
+
+- Prisma 6.15+ for type-safe database access
+- PostgreSQL migrations with Prisma Migrate
+- Database connection pooling and optimization
 
 **Testing & Development**
 
@@ -78,30 +85,47 @@ cd backend
 # Copy environment template
 cp .env.template .env
 
-# Install dependencies (optional - for local development)
+# Install dependencies (for local IDE support)
 npm install
 ```
 
-### 3. Start with Docker (Recommended)
+### 3. Database Setup
 
 ```bash
-# Build and start all services
-npm run dev:build
+# Complete database setup (recommended for new developers)
+npm run setup
 
-# Or start existing containers
-npm run dev:start
+# Or step by step:
+npm run setup:db    # Initialize database and run migrations
+npm run seed:db     # Populate with sample data (optional)
 ```
 
-### 4. Verify Installation
+### 4. Start Development
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+npm run docker:logs
+```
+
+### 5. Verify Installation
 
 ```bash
 # Check health endpoint
 curl http://localhost:3000/health
 
-# Expected response: {"status":"ok","timestamp":"...","uptime":...,"environment":"..."}
+# Check database status
+npm run docker:db:status
+
+# View database (optional)
+npm run docker:db:studio
+
+# Expected API response: {"status":"ok","timestamp":"...","uptime":...,"environment":"..."}
 ```
 
-### 5. Run Tests
+### 6. Run Tests
 
 ```bash
 # Run all tests
@@ -111,6 +135,18 @@ npm test
 npm run test:unit      # Unit tests only
 npm run test:int       # Integration tests only
 ```
+
+## Sample Data
+
+The setup process creates sample users for testing:
+
+| Username     | Password      | Purpose                     |
+| ------------ | ------------- | --------------------------- |
+| `john_doe`   | `password123` | Regular user testing        |
+| `jane_smith` | `password123` | Regular user testing        |
+| `admin_user` | `password123` | Admin functionality testing |
+
+**Security Note**: These are development-only credentials. Never use these in production.
 
 ## API Documentation
 
@@ -231,25 +267,50 @@ npm run dev
 
 ### Available Scripts
 
+**Development & Building**
+
 ```bash
 npm run dev          # Start development server with nodemon
 npm run build        # Compile TypeScript to JavaScript
 npm run start        # Start production server
-npm test             # Run all tests
+```
+
+**Database Operations**
+
+```bash
+npm run setup:db     # Initialize database and run migrations
+npm run seed:db      # Populate database with sample data
+npm run setup        # Complete setup (database + sample data)
+
+# Container-based database commands
+npm run docker:db:migrate    # Run migrations
+npm run docker:db:status     # Check migration status
+npm run docker:db:studio     # Open Prisma Studio
+npm run docker:db:generate   # Generate Prisma client
+```
+
+**Testing & Quality**
+
+```bash
+npm test             # Run all tests (local only)
 npm run test:coverage # Run tests with coverage report
+npm run test:unit    # Run unit tests only
+npm run test:int     # Run integration tests only
 npm run lint         # Run ESLint
 npm run lint:fix     # Fix ESLint issues
 npm run format       # Format code with Prettier
 npm run format:check # Check code formatting
 ```
 
-### Docker Commands
+**Container Management**
 
 ```bash
 npm run dev:build    # Build and start containers
 npm run dev:start    # Start existing containers
 npm run dev:stop     # Stop containers
 npm run dev:clean    # Stop containers and remove images
+npm run docker:shell # Access backend container shell
+npm run docker:logs  # Follow backend container logs
 ```
 
 ## Testing
