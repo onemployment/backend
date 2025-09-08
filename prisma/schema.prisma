@@ -18,13 +18,42 @@ datasource db {
 // ================================
 
 model User {
+  // Primary identifier
   id           String   @id @default(uuid())
+  
+  // Authentication fields
+  email        String   @unique @db.VarChar(255)
   username     String   @unique @db.VarChar(50)
-  passwordHash String   @db.VarChar(255)
+  passwordHash String?  @db.VarChar(255) // nullable for OAuth-only users
+  
+  // Personal information
+  firstName    String   @db.VarChar(100)
+  lastName     String   @db.VarChar(100)
+  displayName  String?  @db.VarChar(200) // optional, set post-registration
+  
+  // OAuth provider linking
+  googleId     String?  @unique @db.VarChar(255)
+  
+  // Account status
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  
+  // Audit trail fields
+  accountCreationMethod String  @db.VarChar(20) // "local" or "google"
+  lastPasswordChange    DateTime?
+  
+  // Timestamps
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  lastLoginAt  DateTime?
+  
+  // Performance indexes
+  @@index([email], name: "user_email_idx")
+  @@index([username], name: "user_username_idx") 
   @@index([createdAt], name: "user_created_at_idx")
-  @@index([updatedAt], name: "user_updated_at_idx")
+  @@index([lastLoginAt], name: "user_last_login_idx")
+  @@index([isActive], name: "user_active_idx")
+  @@index([accountCreationMethod], name: "user_creation_method_idx")
+  
   @@map("users")
 }
