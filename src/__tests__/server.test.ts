@@ -1,21 +1,60 @@
 import request from 'supertest';
 import { createApp } from '../server';
 import { AuthController } from '../api/auth/auth.controller';
+import { UserController } from '../api/user/user.controller';
 import { IAuthService } from '../api/auth/auth.service';
+import { IUserService } from '../api/user/user.service';
+import { User } from '@prisma/client';
+import { JWTUtil } from '../api/auth/utils/jwt.util';
+import { initializeJwtMiddleware } from '../middleware/jwt-auth.middleware';
 
 describe('Server - createApp', () => {
   let app: ReturnType<typeof createApp>;
   let mockAuthService: jest.Mocked<IAuthService>;
+  let mockUserService: jest.Mocked<IUserService>;
   let authController: AuthController;
+  let userController: UserController;
+
+  const mockUser: User = {
+    id: 'test-uuid-123',
+    email: 'test@example.com',
+    username: 'testuser',
+    passwordHash: 'hashedpassword123',
+    firstName: 'Test',
+    lastName: 'User',
+    displayName: null,
+    googleId: null,
+    emailVerified: false,
+    isActive: true,
+    accountCreationMethod: 'local',
+    lastPasswordChange: new Date('2023-01-01T00:00:00.000Z'),
+    createdAt: new Date('2023-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+    lastLoginAt: null,
+  };
 
   beforeEach(() => {
+    // Initialize JWT middleware for tests
+    const jwtUtil = new JWTUtil();
+    initializeJwtMiddleware(jwtUtil);
+
     mockAuthService = {
-      registerUser: jest.fn(),
       loginUser: jest.fn(),
     };
 
+    mockUserService = {
+      registerUser: jest.fn(),
+      getUserProfile: jest.fn(),
+      updateUserProfile: jest.fn(),
+      validateUsername: jest.fn(),
+      validateEmail: jest.fn(),
+      suggestUsernames: jest.fn(),
+    };
+
     authController = new AuthController(mockAuthService);
-    app = createApp({ authController });
+    userController = new UserController(mockUserService);
+
+    app = createApp({ authController, userController });
   });
 
   afterEach(() => {
@@ -33,74 +72,107 @@ describe('Server - createApp', () => {
     });
   });
 
-  describe('POST /api/v1/auth/register', () => {
+  describe('POST /api/v1/user', () => {
     it('should handle registration request', async () => {
-      mockAuthService.registerUser.mockResolvedValue({
-        username: 'testuser',
+      const mockToken = 'mock-jwt-token';
+      mockUserService.registerUser.mockResolvedValue({
+        user: mockUser,
+        token: mockToken,
       });
 
       const response = await request(app)
-        .post('/api/v1/auth/register')
+        .post('/api/v1/user')
         .send({
+          email: 'test@example.com',
+          password: 'Password123',
           username: 'testuser',
-          password: 'password123',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201);
 
       expect(response.body).toEqual({
-        message: 'User registered successfully',
-        username: 'testuser',
+        message: 'User created successfully',
+        token: mockToken,
+        user: {
+          id: 'test-uuid-123',
+          email: 'test@example.com',
+          username: 'testuser',
+          firstName: 'Test',
+          lastName: 'User',
+          displayName: null,
+          emailVerified: false,
+          accountCreationMethod: 'local',
+          createdAt: '2023-01-01T00:00:00.000Z',
+          lastLoginAt: null,
+        },
       });
 
-      expect(mockAuthService.registerUser).toHaveBeenCalledWith({
+      expect(mockUserService.registerUser).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'Password123',
         username: 'testuser',
-        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
       });
     });
 
     it('should handle invalid JSON body', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/register')
+        .post('/api/v1/user')
         .send('invalid json')
         .expect(400);
 
       expect(response.body).toHaveProperty('message', 'Invalid request');
-      expect(mockAuthService.registerUser).not.toHaveBeenCalled();
+      expect(mockUserService.registerUser).not.toHaveBeenCalled();
     });
 
     it('should handle missing content-type header', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/register')
+        .post('/api/v1/user')
         .set('Content-Type', 'text/plain')
-        .send('{"username":"test","password":"test"}')
+        .send('{"email":"test@example.com","password":"Password123"}')
         .expect(400);
 
       expect(response.body).toHaveProperty('message', 'Invalid request');
-      expect(mockAuthService.registerUser).not.toHaveBeenCalled();
+      expect(mockUserService.registerUser).not.toHaveBeenCalled();
     });
   });
 
   describe('POST /api/v1/auth/login', () => {
     it('should handle login request', async () => {
+      const mockToken = 'mock-jwt-token';
       mockAuthService.loginUser.mockResolvedValue({
-        username: 'testuser',
+        user: mockUser,
+        token: mockToken,
       });
 
       const response = await request(app)
         .post('/api/v1/auth/login')
         .send({
-          username: 'testuser',
+          email: 'test@example.com',
           password: 'password123',
         })
         .expect(200);
 
       expect(response.body).toEqual({
         message: 'Login successful',
-        username: 'testuser',
+        token: mockToken,
+        user: {
+          id: 'test-uuid-123',
+          email: 'test@example.com',
+          username: 'testuser',
+          firstName: 'Test',
+          lastName: 'User',
+          displayName: null,
+          emailVerified: false,
+          createdAt: '2023-01-01T00:00:00.000Z',
+          lastLoginAt: null,
+        },
       });
 
       expect(mockAuthService.loginUser).toHaveBeenCalledWith({
-        username: 'testuser',
+        email: 'test@example.com',
         password: 'password123',
       });
     });
@@ -108,21 +180,29 @@ describe('Server - createApp', () => {
 
   describe('Express middleware', () => {
     it('should parse JSON bodies correctly', async () => {
-      mockAuthService.registerUser.mockResolvedValue({
-        username: 'testuser',
+      const mockToken = 'mock-jwt-token';
+      mockUserService.registerUser.mockResolvedValue({
+        user: mockUser,
+        token: mockToken,
       });
 
       await request(app)
-        .post('/api/v1/auth/register')
+        .post('/api/v1/user')
         .send({
+          email: 'test@example.com',
+          password: 'Password123',
           username: 'testuser',
-          password: 'password123',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201);
 
-      expect(mockAuthService.registerUser).toHaveBeenCalledWith({
+      expect(mockUserService.registerUser).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'Password123',
         username: 'testuser',
-        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
       });
     });
   });

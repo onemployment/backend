@@ -2,53 +2,48 @@ import { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 
 export interface IAuthRepository {
-  createUser(username: string, passwordHash: string): Promise<User>;
-  findByUsername(username: string): Promise<User | null>;
-  findById(id: string): Promise<User | null>;
-  userExists(username: string): Promise<boolean>;
+  // Returns domain models, not API response shapes
+  findByEmail(email: string): Promise<User | null>;
+  findByGoogleId(googleId: string): Promise<User | null>;
+
+  // Activity tracking (returns updated user)
+  updateLastLogin(userId: string): Promise<User>;
+
+  // Account linking (returns domain model)
+  linkGoogleAccount(userId: string, googleId: string): Promise<User>;
 }
 
 export class AuthRepository implements IAuthRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  public async createUser(
-    username: string,
-    passwordHash: string
+  public async findByEmail(email: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+  }
+
+  public async findByGoogleId(googleId: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({
+      where: { googleId },
+    });
+  }
+
+  public async updateLastLogin(userId: string): Promise<User> {
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
+  }
+
+  public async linkGoogleAccount(
+    userId: string,
+    googleId: string
   ): Promise<User> {
-    return await this.prisma.user.create({
-      data: {
-        username,
-        passwordHash,
-      },
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: { googleId },
     });
   }
 
-  public async findByUsername(username: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
-      where: {
-        username,
-      },
-    });
-  }
-
-  public async findById(id: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
-      where: {
-        id,
-      },
-    });
-  }
-
-  public async userExists(username: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        username,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return user !== null;
-  }
+  // All methods return domain models or primitives, no API shapes
 }

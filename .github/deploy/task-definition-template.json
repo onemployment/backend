@@ -68,6 +68,10 @@
         {
           "name": "REDIS_URL",
           "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:REDIS_URL::"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:062440546828:secret:onemployment/database-REKfzf:JWT_SECRET::"
         }
       ],
       "logConfiguration": {

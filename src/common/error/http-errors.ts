@@ -18,6 +18,18 @@ export class UnauthorizedError extends HttpError {
   }
 }
 
+export class NotFoundError extends HttpError {
+  constructor(message = 'Resource not found') {
+    super(404, message);
+  }
+}
+
+export class BadRequestError extends HttpError {
+  constructor(message = 'Bad request') {
+    super(400, message);
+  }
+}
+
 export class ResponseValidationError extends HttpError {
   constructor(message = 'Internal Server Error') {
     super(500, message);

@@ -1,60 +1,52 @@
-import { RegisterRequest, LoginRequest } from './auth.schema';
+import { User } from '@prisma/client';
+import { LoginRequest } from './auth.schema';
 import { IAuthRepository } from './auth.repository';
-import { IPasswordStrategy } from './strategies/IPasswordStrategy';
-import {
-  ConflictError,
-  UnauthorizedError,
-} from '../../common/error/http-errors';
+import { IPasswordStrategy } from './strategies/password-strategy.interface';
+import { JWTUtil } from './utils/jwt.util';
+import { UnauthorizedError } from '../../common/error/http-errors';
 
 export interface IAuthService {
-  registerUser(userData: RegisterRequest): Promise<{ username: string }>;
-  loginUser(credentials: LoginRequest): Promise<{ username: string }>;
+  // Returns domain model + token, NOT API response shape
+  loginUser(credentials: LoginRequest): Promise<{ user: User; token: string }>;
 }
 
 export class AuthService implements IAuthService {
   constructor(
     private readonly authRepository: IAuthRepository,
-    private readonly passwordStrategy: IPasswordStrategy
+    private readonly passwordStrategy: IPasswordStrategy,
+    private readonly jwtUtil: JWTUtil
   ) {}
 
-  public async registerUser(
-    userData: RegisterRequest
-  ): Promise<{ username: string }> {
-    const userExists = await this.authRepository.userExists(userData.username);
-    if (userExists) {
-      throw new ConflictError();
-    }
-
-    const passwordHash = await this.passwordStrategy.hash(userData.password);
-
-    const user = await this.authRepository.createUser(
-      userData.username,
-      passwordHash
-    );
-
-    return {
-      username: user.username,
-    };
-  }
-
-  public async loginUser(
+  async loginUser(
     credentials: LoginRequest
-  ): Promise<{ username: string }> {
-    const user = await this.authRepository.findByUsername(credentials.username);
+  ): Promise<{ user: User; token: string }> {
+    // 1. Find user by email (case-insensitive)
+    const user = await this.authRepository.findByEmail(credentials.email);
     if (!user) {
-      throw new UnauthorizedError();
+      throw new UnauthorizedError('Invalid email or password');
     }
 
-    const isPasswordValid = await this.passwordStrategy.verify(
+    // 2. Check if user has passwordHash (not OAuth-only account)
+    if (!user.passwordHash) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    // 3. Verify password
+    const isValid = await this.passwordStrategy.verify(
       credentials.password,
       user.passwordHash
     );
-    if (!isPasswordValid) {
-      throw new UnauthorizedError();
+    if (!isValid) {
+      throw new UnauthorizedError('Invalid email or password');
     }
 
-    return {
-      username: user.username,
-    };
+    // 4. Update lastLoginAt and get updated user
+    const updatedUser = await this.authRepository.updateLastLogin(user.id);
+
+    // 5. Generate JWT token
+    const token = await this.jwtUtil.generateToken(updatedUser);
+
+    // Return updated user with current lastLoginAt timestamp
+    return { user: updatedUser, token };
   }
 }

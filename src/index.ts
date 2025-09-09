@@ -3,7 +3,13 @@ import { createApp } from './server';
 import { AuthRepository } from './api/auth/auth.repository';
 import { AuthService } from './api/auth/auth.service';
 import { AuthController } from './api/auth/auth.controller';
+import { UserRepository } from './api/user/user.repository';
+import { UserService } from './api/user/user.service';
+import { UserController } from './api/user/user.controller';
 import { BcryptStrategy } from './api/auth/strategies/BcryptStrategy';
+import { JWTUtil } from './api/auth/utils/jwt.util';
+import { UsernameSuggestionsUtil } from './api/user/utils/username-suggestions.util';
+import { initializeJwtMiddleware } from './middleware/jwt-auth.middleware';
 import { RedisClientService } from './infra/redis/client';
 import { PrismaClient } from '@prisma/client';
 import { config } from './config';
@@ -28,12 +34,38 @@ async function bootstrap(): Promise<ServerWithClients> {
     throw error;
   }
 
+  // Initialize shared utilities
   const passwordStrategy = new BcryptStrategy(config.saltRounds);
-  const authRepository = new AuthRepository(prismaClient);
-  const authService = new AuthService(authRepository, passwordStrategy);
-  const authController = new AuthController(authService);
+  const jwtUtil = new JWTUtil();
 
-  const app = createApp({ authController });
+  // Initialize JWT middleware
+  initializeJwtMiddleware(jwtUtil);
+
+  // Initialize repositories
+  const authRepository = new AuthRepository(prismaClient);
+  const userRepository = new UserRepository(prismaClient);
+
+  // Initialize utilities
+  const usernameSuggestionsUtil = new UsernameSuggestionsUtil(userRepository);
+
+  // Initialize services
+  const authService = new AuthService(
+    authRepository,
+    passwordStrategy,
+    jwtUtil
+  );
+  const userService = new UserService(
+    userRepository,
+    passwordStrategy,
+    jwtUtil,
+    usernameSuggestionsUtil
+  );
+
+  // Initialize controllers
+  const authController = new AuthController(authService);
+  const userController = new UserController(userService);
+
+  const app = createApp({ authController, userController });
 
   const server = app.listen(config.port, config.host, () => {
     logger.info(

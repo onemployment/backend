@@ -1,27 +1,30 @@
 import { Router } from 'express';
 import { AuthController } from './auth/auth.controller';
-import { requestValidationHandler } from '../middleware/request-validator.middleware';
-import { asyncHandler } from '../middleware/async-handler.middleware';
-import { registerSchema, loginSchema } from './auth/auth.schema';
+import { UserController } from './user/user.controller';
+import { createAuthRouter } from './auth';
+import { createUserRouter } from './user';
 
 export interface AppDependencies {
   authController: AuthController;
+  userController: UserController;
 }
 
 export const createApiRouter = (dependencies: AppDependencies): Router => {
   const apiRouter = Router();
-  const { authController } = dependencies;
 
-  apiRouter.post(
-    '/auth/register',
-    requestValidationHandler(registerSchema),
-    asyncHandler(authController.registerUser)
+  // Mount domain routers consistently
+  apiRouter.use(
+    '/auth',
+    createAuthRouter({
+      authController: dependencies.authController,
+    })
   );
 
-  apiRouter.post(
-    '/auth/login',
-    requestValidationHandler(loginSchema),
-    asyncHandler(authController.loginUser)
+  apiRouter.use(
+    '/user',
+    createUserRouter({
+      userController: dependencies.userController,
+    })
   );
 
   return apiRouter;

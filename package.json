@@ -44,11 +44,13 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.15.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "pino": "^9.9.0",
     "redis": "^4.7.0",
     "uuid": "^11.1.0",
@@ -80,5 +82,8 @@
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
+  },
+  "ts-node": {
+    "files": true
   }
 }

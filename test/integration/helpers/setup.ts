@@ -40,9 +40,13 @@ beforeAll(async () => {
 
   await globalWithPostgres.prismaClient.$connect();
 
-  // Push schema to test database
+  // Deploy migrations to test database (production-style)
   const { execSync } = require('child_process');
-  execSync('npx prisma db push --force-reset', {
+  execSync('npx prisma generate', {
+    stdio: 'inherit',
+    env: { ...process.env, POSTGRES_DB_URL: databaseUrl },
+  });
+  execSync('npx prisma migrate deploy', {
     stdio: 'inherit',
     env: { ...process.env, POSTGRES_DB_URL: databaseUrl },
   });

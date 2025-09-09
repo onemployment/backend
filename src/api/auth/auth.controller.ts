@@ -1,66 +1,45 @@
 import { Request, Response } from 'express';
-import { ZodError, ZodType } from 'zod';
-import {
-  RegisterRequest,
-  LoginRequest,
-  RegisterResponse,
-  LoginResponse,
-  registerResponseSchema,
-  loginResponseSchema,
-  ErrorResponse,
-} from './auth.schema';
+import { User } from '@prisma/client';
+import { LoginRequest, LoginResponse } from './auth.schema';
 import { IAuthService } from './auth.service';
-import { ResponseValidationError } from '../../common/error/http-errors';
 
 export class AuthController {
   constructor(private readonly authService: IAuthService) {}
 
-  private validateResponse<T>(schema: ZodType<T>, data: unknown): T {
-    try {
-      return schema.parse(data);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new ResponseValidationError();
-      }
-      throw error;
-    }
-  }
+  public loginUser = async (req: Request, res: Response): Promise<void> => {
+    const credentials = req.body as LoginRequest;
 
-  public registerUser = async (
-    req: Request<object, RegisterResponse, RegisterRequest>,
-    res: Response<RegisterResponse | ErrorResponse>
-  ): Promise<void> => {
-    const data = req.body as RegisterRequest;
-    const user = await this.authService.registerUser(data);
+    // Service returns domain model + token
+    const { user, token } = await this.authService.loginUser(credentials);
 
-    const response: RegisterResponse = {
-      message: 'User registered successfully',
-      username: user.username,
-    };
-
-    const validatedResponse = this.validateResponse(
-      registerResponseSchema,
-      response
-    );
-    res.status(201).json(validatedResponse);
-  };
-
-  public loginUser = async (
-    req: Request<object, LoginResponse, LoginRequest>,
-    res: Response<LoginResponse | ErrorResponse>
-  ): Promise<void> => {
-    const data = req.body as LoginRequest;
-    const user = await this.authService.loginUser(data);
-
+    // Controller shapes API response (consistent with UserController)
     const response: LoginResponse = {
       message: 'Login successful',
-      username: user.username,
+      token,
+      user: this.transformUserToAPI(user), // Same transformation as UserController
     };
 
-    const validatedResponse = this.validateResponse(
-      loginResponseSchema,
-      response
-    );
-    res.status(200).json(validatedResponse);
+    res.status(200).json(response);
   };
+
+  public logoutUser = async (req: Request, res: Response): Promise<void> => {
+    // JWT is stateless, so just return success
+    // In future: could implement JWT blacklisting with Redis
+    res.status(200).json({ message: 'Logout successful' });
+  };
+
+  // CONSISTENT TRANSFORMATION METHOD (same as UserController)
+  private transformUserToAPI(user: User) {
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt.toISOString(),
+      lastLoginAt: user.lastLoginAt?.toISOString() || null,
+    };
+  }
 }

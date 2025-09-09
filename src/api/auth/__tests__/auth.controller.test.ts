@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthController } from '../auth.controller';
 import { IAuthService } from '../auth.service';
+import { User } from '@prisma/client';
 
 jest.mock('../../../common/logger/logger');
 
@@ -11,6 +12,24 @@ describe('AuthController', () => {
   let mockJson: jest.Mock;
   let mockStatus: jest.Mock;
   let mockAuthService: jest.Mocked<IAuthService>;
+
+  const mockUser: User = {
+    id: 'test-uuid-123',
+    email: 'test@example.com',
+    username: 'testuser',
+    passwordHash: 'hashedpassword123',
+    firstName: 'Test',
+    lastName: 'User',
+    displayName: null,
+    googleId: null,
+    emailVerified: false,
+    isActive: true,
+    accountCreationMethod: 'local',
+    lastPasswordChange: new Date('2023-01-01T00:00:00.000Z'),
+    createdAt: new Date('2023-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+    lastLoginAt: null,
+  };
 
   beforeEach(() => {
     mockJson = jest.fn();
@@ -23,7 +42,6 @@ describe('AuthController', () => {
     };
 
     mockAuthService = {
-      registerUser: jest.fn(),
       loginUser: jest.fn(),
     };
 
@@ -34,35 +52,13 @@ describe('AuthController', () => {
     jest.restoreAllMocks();
   });
 
-  describe('registerUser', () => {
-    it('should successfully register a user with valid credentials', async () => {
-      mockRequest.body = { username: 'testuser', password: 'testpassword123' };
-      mockAuthService.registerUser.mockResolvedValue({
-        username: 'testuser',
-      });
-
-      await authController.registerUser(
-        mockRequest as Request,
-        mockResponse as Response
-      );
-
-      expect(mockAuthService.registerUser).toHaveBeenCalledWith({
-        username: 'testuser',
-        password: 'testpassword123',
-      });
-      expect(mockStatus).toHaveBeenCalledWith(201);
-      expect(mockJson).toHaveBeenCalledWith({
-        message: 'User registered successfully',
-        username: 'testuser',
-      });
-    });
-  });
-
   describe('loginUser', () => {
     it('should successfully login a user with valid credentials', async () => {
-      mockRequest.body = { username: 'testuser', password: 'testpass' };
+      const mockToken = 'mock-jwt-token';
+      mockRequest.body = { email: 'test@example.com', password: 'testpass' };
       mockAuthService.loginUser.mockResolvedValue({
-        username: 'testuser',
+        user: mockUser,
+        token: mockToken,
       });
 
       await authController.loginUser(
@@ -71,41 +67,49 @@ describe('AuthController', () => {
       );
 
       expect(mockAuthService.loginUser).toHaveBeenCalledWith({
-        username: 'testuser',
+        email: 'test@example.com',
         password: 'testpass',
       });
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         message: 'Login successful',
-        username: 'testuser',
+        token: mockToken,
+        user: {
+          id: 'test-uuid-123',
+          email: 'test@example.com',
+          username: 'testuser',
+          firstName: 'Test',
+          lastName: 'User',
+          displayName: null,
+          emailVerified: false,
+          createdAt: '2023-01-01T00:00:00.000Z',
+          lastLoginAt: null,
+        },
       });
     });
   });
 
-  describe('JSON Response Format', () => {
-    it('should return valid JSON for successful registration', async () => {
-      mockRequest.body = { username: 'testuser', password: 'testpassword123' };
-      mockAuthService.registerUser.mockResolvedValue({
-        username: 'testuser',
-      });
-
-      await authController.registerUser(
+  describe('logoutUser', () => {
+    it('should successfully logout and return success message', async () => {
+      await authController.logoutUser(
         mockRequest as Request,
         mockResponse as Response
       );
 
-      expect(mockJson).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.any(String),
-          username: expect.any(String),
-        })
-      );
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({
+        message: 'Logout successful',
+      });
     });
+  });
 
-    it('should return valid JSON for successful login', async () => {
-      mockRequest.body = { username: 'testuser', password: 'testpass' };
+  describe('transformUserToAPI', () => {
+    it('should properly transform User domain model to API response format', async () => {
+      const mockToken = 'mock-jwt-token';
+      mockRequest.body = { email: 'test@example.com', password: 'testpass' };
       mockAuthService.loginUser.mockResolvedValue({
-        username: 'testuser',
+        user: mockUser,
+        token: mockToken,
       });
 
       await authController.loginUser(
@@ -113,10 +117,21 @@ describe('AuthController', () => {
         mockResponse as Response
       );
 
+      const expectedUserResponse = {
+        id: 'test-uuid-123',
+        email: 'test@example.com',
+        username: 'testuser',
+        firstName: 'Test',
+        lastName: 'User',
+        displayName: null,
+        emailVerified: false,
+        createdAt: '2023-01-01T00:00:00.000Z',
+        lastLoginAt: null,
+      };
+
       expect(mockJson).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.any(String),
-          username: expect.any(String),
+          user: expectedUserResponse,
         })
       );
     });
