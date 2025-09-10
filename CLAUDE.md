@@ -23,6 +23,7 @@ This is the backend API for the OnEmployment platform - a comprehensive job sear
 ### Authentication & Security
 
 - **bcrypt** - Password hashing strategy
+- **jsonwebtoken** - JWT token generation and validation
 - **Zod** - Schema validation and type safety
 - **Helmet** - Security headers middleware
 - **CORS** - Cross-origin resource sharing
@@ -44,8 +45,8 @@ This is the backend API for the OnEmployment platform - a comprehensive job sear
 
 ### Test Configuration
 
-- **Unit Tests**: Located in `src/**/__tests__/`, using Jest with ts-jest
-- **Integration Tests**: Located in `test/integration/`, using Testcontainers for Redis
+- **Unit Tests**: Located in `src/**/__tests__/`, using Jest with ts-jest (21 test files)
+- **Integration Tests**: Located in `test/integration/`, using Testcontainers for Redis and PostgreSQL (6 test files)
 - **Coverage**: Available via `npm run test:coverage`
 - **Watch Mode**: Available for both unit (`npm run test:unit:watch`) and integration (`npm run test:int:watch`)
 
@@ -125,10 +126,20 @@ src/
 │   ├── auth/              # Authentication module
 │   │   ├── __tests__/     # Unit tests
 │   │   ├── strategies/    # Password hashing strategies
+│   │   ├── utils/         # JWT utilities
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
 │   │   ├── auth.repository.ts
-│   │   └── auth.schema.ts # Zod validation schemas
+│   │   ├── auth.schema.ts # Zod validation schemas
+│   │   └── index.ts
+│   ├── user/              # User management module
+│   │   ├── __tests__/     # Unit tests
+│   │   ├── utils/         # Username validation utilities
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   ├── user.repository.ts
+│   │   ├── user.schema.ts # Zod validation schemas
+│   │   └── index.ts
 │   └── index.ts           # API route registration
 ├── common/                # Shared utilities
 │   ├── error/            # Error handling
@@ -137,6 +148,7 @@ src/
 ├── infra/                # Infrastructure services
 │   └── redis/            # Redis client and utilities
 ├── middleware/           # Express middleware
+├── types/                # TypeScript type definitions
 ├── __tests__/            # Server-level tests
 ├── index.ts              # Application entry point
 ├── server.ts             # Express app configuration
@@ -166,6 +178,19 @@ scripts/                  # Development scripts
 - `npm run dev:stop` - Stop Docker containers
 - `npm run dev:clean` - Clean Docker containers and images
 
+### Testing & Quality
+
+- `npm run test` - Run all tests (unit and integration)
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:unit` - Run unit tests only
+- `npm run test:unit:watch` - Run unit tests in watch mode
+- `npm run test:int` - Run integration tests only
+- `npm run test:int:watch` - Run integration tests in watch mode
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues automatically
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+
 ### Database Management
 
 - `npm run setup:db` - Automated database setup (containers + migrations)
@@ -173,16 +198,21 @@ scripts/                  # Development scripts
 - `npm run setup` - Complete setup (database + seed data)
 - `npm run db:migrate:dev` - Run development migrations
 - `npm run db:migrate:deploy` - Run production migrations
+- `npm run db:migrate:status` - Check migration status
 - `npm run db:generate` - Generate Prisma client
 - `npm run db:studio` - Open Prisma Studio database UI
+- `npm run db:push` - Push schema changes to database
 
-### Docker Database Operations
+### Docker Operations
 
 - `npm run docker:db:migrate` - Run migrations in Docker container
+- `npm run docker:db:status` - Check migration status in container
 - `npm run docker:db:generate` - Generate Prisma client in container
 - `npm run docker:db:studio` - Open Prisma Studio from container
+- `npm run docker:db:push` - Push schema changes in container
 - `npm run docker:shell` - Access container shell
 - `npm run docker:logs` - View container logs
+- `npm run docker:lint` - Run ESLint in container
 
 ## Architecture Patterns
 
