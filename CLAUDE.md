@@ -1,286 +1,257 @@
-# Project Context
+# Backend Repository - Implementation Guide
 
-## High Level Context
+## Repository Context
 
-This is the backend API for the OnEmployment platform - a comprehensive job search and employment matching system. The project demonstrates a production-ready Node.js API with TypeScript, authentication, database integration, and containerized deployment.
+**Purpose**: Production-ready Node.js/TypeScript API providing authentication and core platform services
+**Current Status**: ✅ Production deployment on AWS ECS with Redis authentication
+**Key Technologies**: Node.js, Express.js, TypeScript, Redis, PostgreSQL (Prisma), JWT, bcrypt, Zod
 
-## Technologies Used
+**Production Environment**:
 
-### Core Technologies
+- **Live API**: https://api.onemployment.org (ECS Fargate + Application Load Balancer)
+- **Health Check**: https://api.onemployment.org/health
+- **Container Registry**: `062440546828.dkr.ecr.us-east-2.amazonaws.com/onemployment/api`
+- **Redis**: ElastiCache cluster for sessions and caching
 
-- **Node.js** - JavaScript runtime environment
-- **Express.js** - Web application framework for Node.js
-- **TypeScript** - Typed superset of JavaScript for enhanced development experience
-- **ts-node** - TypeScript execution environment for Node.js development
-- **npm** - Package manager for dependency management
+## Development Environment
 
-### Database & Caching
+### Local Setup Commands
 
-- **PostgreSQL** - Primary database (via Prisma ORM)
-- **Prisma** - Database ORM and migration tool
-- **Redis** - Caching and session storage
+```bash
+# Development with hot reload
+npm run dev
 
-### Authentication & Security
+# Full Docker environment (Redis + PostgreSQL + API)
+npm run dev:build
+npm run dev:start
 
-- **bcrypt** - Password hashing strategy
-- **jsonwebtoken** - JWT token generation and validation
-- **Zod** - Schema validation and type safety
-- **Helmet** - Security headers middleware
-- **CORS** - Cross-origin resource sharing
-
-### Development & Testing
-
-- **Jest** - Testing framework (unit and integration tests)
-- **Testcontainers** - Docker-based integration testing
-- **ESLint** - Code linting and style enforcement
-- **Prettier** - Code formatting
-- **Nodemon** - Development hot-reload
-
-### Infrastructure & Deployment
-
-- **Docker** - Containerization for development and production
-- **Docker Compose** - Multi-service development environment
-- **AWS ECS/Fargate** - Production container orchestration
-- **Pino** - Structured logging for production monitoring
-
-### Test Configuration
-
-- **Unit Tests**: Located in `src/**/__tests__/`, using Jest with ts-jest (21 test files)
-- **Integration Tests**: Located in `test/integration/`, using Testcontainers for Redis and PostgreSQL (6 test files)
-- **Coverage**: Available via `npm run test:coverage`
-- **Watch Mode**: Available for both unit (`npm run test:unit:watch`) and integration (`npm run test:int:watch`)
-
-## Commit Message Rules
-
-### Format
-
-```
-<imperative title>
-
-- <concise bullet point describing important change and brief why>
-- <concise bullet point describing important change and brief why>
-- <concise bullet point describing important change and brief why>
+# Stop and clean Docker environment
+npm run dev:stop
+npm run dev:clean
 ```
 
-### Guidelines
+### Database Management
 
-- Commit title should be imperative and concise (50 characters or less)
-- Use bullet points in description to list important changes
-- Explain what changed and briefly why
-- No emojis, Claude collaboration lines, or extra text
-- Keep bullet points concise and focused
+```bash
+# Automated database setup
+npm run setup:db          # Containers + migrations
+npm run seed:db           # Sample data
+npm run setup             # Complete setup
 
-### Example
-
-```
-Add user authentication flow
-
-- Implement login/logout functionality to secure user access
-- Add JWT token management for session handling
-- Create protected route wrapper for authenticated pages
-- Add form validation to prevent invalid submissions
+# Database operations
+npm run db:migrate:dev     # Development migrations
+npm run db:generate        # Generate Prisma client
+npm run db:studio          # Open Prisma Studio UI
+npm run db:push            # Push schema changes
 ```
 
-## Commit Workflow
+### Testing & Quality Validation Sequence
 
-When preparing to commit changes, follow this standardized workflow:
+**Required sequence before committing**:
 
-1. **Review commit template**: Reference the commit message rules above
-2. **Analyze local changes**: Compare current branch changes with the remote branch to understand what has been modified
-3. **Prepare commit message**: Create a commit message following the Commit Template Rules with:
-   - Concise imperative title summarizing the change
-   - Bullet points detailing specific modifications made
-4. **Execute commit and push**: Stage all changes, commit with the exact prepared message, and push to the current branch's remote
+```bash
+npm run lint              # ESLint validation
+npm run build             # TypeScript compilation
+npm run test:unit         # Unit tests (21 test files)
+npm run test:int          # Integration tests (6 test files)
+npm run format            # Prettier formatting
+```
 
-## Issue Template
+**Watch modes for development**:
 
-### What
+```bash
+npm run test:unit:watch   # Unit tests in watch mode
+npm run test:int:watch    # Integration tests in watch mode
+npm run test:coverage     # Coverage report
+```
 
-Describe what needs to be done or what problem needs to be solved.
+## Architecture & Patterns
 
-### Why
-
-Explain the business value, user need, or technical necessity behind this issue.
-
-### How
-
-Outline the general approach or solution strategy for addressing this issue.
-
-### Implementation Plan
-
-- [ ] Specific task 1
-- [ ] Specific task 2
-- [ ] Specific task 3
-- [ ] Testing and validation
-- [ ] Documentation updates
-
-### Acceptance Criteria
-
-Checkboxes for that define the outcomes of the issue
-
-## Project Structure
+### Layered Architecture
 
 ```
 src/
-├── api/                    # API routes and business logic
-│   ├── auth/              # Authentication module
-│   │   ├── __tests__/     # Unit tests
+├── api/                    # Business logic modules
+│   ├── auth/              # Authentication (JWT, bcrypt strategies)
 │   │   ├── strategies/    # Password hashing strategies
 │   │   ├── utils/         # JWT utilities
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
 │   │   ├── auth.repository.ts
-│   │   ├── auth.schema.ts # Zod validation schemas
-│   │   └── index.ts
-│   ├── user/              # User management module
-│   │   ├── __tests__/     # Unit tests
-│   │   ├── utils/         # Username validation utilities
-│   │   ├── user.controller.ts
-│   │   ├── user.service.ts
-│   │   ├── user.repository.ts
-│   │   ├── user.schema.ts # Zod validation schemas
-│   │   └── index.ts
-│   └── index.ts           # API route registration
+│   │   └── auth.schema.ts # Zod validation schemas
+│   └── user/              # User management
+│       ├── utils/         # Username validation
+│       ├── user.controller.ts
+│       ├── user.service.ts
+│       ├── user.repository.ts
+│       └── user.schema.ts
 ├── common/                # Shared utilities
-│   ├── error/            # Error handling
-│   └── logger/           # Structured logging
-├── config/               # Configuration management
+│   ├── error/            # HTTP error classes & handling
+│   └── logger/           # Structured logging (Pino)
+├── config/               # Environment configuration
 ├── infra/                # Infrastructure services
-│   └── redis/            # Redis client and utilities
+│   └── redis/            # Redis client & utilities
 ├── middleware/           # Express middleware
-├── types/                # TypeScript type definitions
-├── __tests__/            # Server-level tests
-├── index.ts              # Application entry point
-├── server.ts             # Express app configuration
+├── types/                # TypeScript definitions
 └── utils.ts              # Utility functions
-
-test/                     # Integration tests
-├── integration/
-│   ├── helpers/         # Test setup and utilities
-│   └── *.int.test.ts    # Integration test files
-
-prisma/                   # Database schema and migrations
-├── schema.prisma        # Database schema definition
-└── migrations/          # Database migration files
-
-scripts/                  # Development scripts
-├── setup-db.sh          # Database setup automation
-└── seed.ts              # Database seeding
 ```
 
-## Development Commands
+### Design Patterns Used
 
-### Local Development
-
-- `npm run dev` - Start development server with hot reload
-- `npm run dev:build` - Build and start full Docker environment
-- `npm run dev:start` - Start existing Docker containers
-- `npm run dev:stop` - Stop Docker containers
-- `npm run dev:clean` - Clean Docker containers and images
-
-### Testing & Quality
-
-- `npm run test` - Run all tests (unit and integration)
-- `npm run test:coverage` - Run tests with coverage report
-- `npm run test:unit` - Run unit tests only
-- `npm run test:unit:watch` - Run unit tests in watch mode
-- `npm run test:int` - Run integration tests only
-- `npm run test:int:watch` - Run integration tests in watch mode
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues automatically
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-
-### Database Management
-
-- `npm run setup:db` - Automated database setup (containers + migrations)
-- `npm run seed:db` - Populate database with sample data
-- `npm run setup` - Complete setup (database + seed data)
-- `npm run db:migrate:dev` - Run development migrations
-- `npm run db:migrate:deploy` - Run production migrations
-- `npm run db:migrate:status` - Check migration status
-- `npm run db:generate` - Generate Prisma client
-- `npm run db:studio` - Open Prisma Studio database UI
-- `npm run db:push` - Push schema changes to database
-
-### Docker Operations
-
-- `npm run docker:db:migrate` - Run migrations in Docker container
-- `npm run docker:db:status` - Check migration status in container
-- `npm run docker:db:generate` - Generate Prisma client in container
-- `npm run docker:db:studio` - Open Prisma Studio from container
-- `npm run docker:db:push` - Push schema changes in container
-- `npm run docker:shell` - Access container shell
-- `npm run docker:logs` - View container logs
-- `npm run docker:lint` - Run ESLint in container
-
-## Architecture Patterns
-
-### Layered Architecture
-
-- **Controller Layer**: HTTP request/response handling and validation
-- **Service Layer**: Business logic and orchestration
-- **Repository Layer**: Data access abstraction
-- **Infrastructure Layer**: External service integration (Redis, database)
-
-### Dependency Injection
-
-- Manual dependency injection in `src/index.ts`
-- Strategy pattern for password hashing (`BcryptStrategy`)
-- Interface-based abstractions for testability
-
-### Error Handling
-
-- Custom HTTP error classes in `src/common/error/`
-- Centralized error handling middleware
-- Structured error responses with proper HTTP status codes
+- **Dependency Injection**: Manual DI in `src/index.ts` with interface abstractions
+- **Strategy Pattern**: `BcryptStrategy` for password hashing with configurable salt rounds
+- **Repository Pattern**: Data access abstraction (`*.repository.ts` files)
+- **Service Layer**: Business logic orchestration (`*.service.ts` files)
+- **Controller Pattern**: HTTP request/response handling (`*.controller.ts` files)
 
 ### Validation & Type Safety
 
-- **Zod schemas** for request/response validation
-- **TypeScript strict mode** for compile-time safety
-- **Prisma types** for database type safety
+- **Zod Schemas**: Request/response validation in `*.schema.ts` files
+- **TypeScript Strict Mode**: Compile-time type safety with strict configuration
+- **Prisma Types**: Database type safety with generated client types
+- **Custom Error Classes**: Structured error handling with HTTP status codes
 
-## Production Configuration
+## Testing Strategy
 
-### Environment Variables
+### Test Organization
 
-- `PORT` - Server port (default: 3000)
-- `HOST` - Server host (default: 0.0.0.0)
-- `NODE_ENV` - Environment (development/production/test)
-- `REDIS_URL` - Redis connection string
-- `POSTGRES_DB_URL` - PostgreSQL connection string
-- `SALT_ROUNDS` - bcrypt salt rounds (default: 12)
+- **Unit Tests**: `src/**/__tests__/` - 21 test files covering business logic
+- **Integration Tests**: `test/integration/` - 6 test files using Testcontainers
+- **Test Database**: Isolated PostgreSQL and Redis via Docker containers
 
-### Health Monitoring
+### Testing Approach
 
-- Health check endpoint: `/health`
-- Structured logging with Pino
-- Graceful shutdown handling (SIGTERM/SIGINT)
-- Redis connection health monitoring
+- **Testcontainers**: Docker-based integration testing with real databases
+- **Jest Configuration**: ts-jest for TypeScript execution
+- **Mocking Strategy**: Interface-based mocking for external dependencies
+- **Coverage Requirements**: Comprehensive coverage of business logic and API endpoints
 
-### Security Features
+### Test Execution
 
-- Helmet middleware for security headers
-- CORS configuration for cross-origin requests
-- bcrypt password hashing with configurable salt rounds
-- Input validation with Zod schemas
-- Error message sanitization
+```bash
+npm test                   # Full test suite (unit + integration)
+npm run test:unit         # Unit tests only (fast feedback)
+npm run test:int          # Integration tests only (real databases)
+```
 
 ## Deployment Context
 
 ### Production Infrastructure
 
-- **AWS ECS/Fargate**: Container orchestration
-- **ElastiCache Redis**: Session and cache storage
-- **RDS PostgreSQL**: Persistent data storage
-- **Application Load Balancer**: HTTPS termination and routing
-- **ECR**: Container image registry
-- **Production URL**: https://api.onemployment.org
+- **AWS ECS Fargate**: Container orchestration with `onemployment-cluster`
+- **Service Configuration**: `backend-service` (1 task, 256 CPU, 512 MB memory)
+- **ElastiCache Redis**: Session storage and caching layer
+- **RDS PostgreSQL**: Persistent data storage (integration pending)
+- **Application Load Balancer**: HTTPS termination and health checks
 
-### Container Configuration
+### Automated Deployment Pipeline
 
-- **Development**: Docker Compose with hot reload
-- **Production**: Multi-stage Docker build
-- **Health Checks**: Built into Docker Compose and ECS
-- **Resource Limits**: 256 CPU units, 512 MB memory (Fargate)
+**Trigger**: Push to main branch
+**Pipeline Steps**:
+
+1. ESLint validation
+2. TypeScript compilation
+3. Unit test execution
+4. Integration test execution
+5. Docker image build
+6. ECR push
+7. ECS service deployment
+8. Health check verification
+
+### Environment Configuration
+
+```bash
+# Required environment variables
+PORT=3000                    # Server port
+HOST=0.0.0.0                # Server host
+NODE_ENV=production          # Environment mode
+REDIS_URL=                   # Redis connection string
+POSTGRES_DB_URL=             # PostgreSQL connection string
+SALT_ROUNDS=12               # bcrypt salt rounds
+```
+
+### Health Monitoring
+
+- **Health Endpoint**: `/health` with Redis connection verification
+- **Structured Logging**: Pino logger for production monitoring
+- **Graceful Shutdown**: SIGTERM/SIGINT handling
+- **ECS Health Checks**: Container-level health monitoring
+
+## AI Agent Instructions
+
+### Before Starting Backend Development
+
+1. **Read planning context**: Start from [`onemployment-planning/CLAUDE.md`](https://github.com/onemployment/onemployment-planning/blob/main/CLAUDE.md)
+2. **Understand the task**: Review Feature Request and Technical Design issues
+3. **Set up environment**: Run `npm run setup` for complete local development setup
+4. **Verify health**: Check `http://localhost:3000/health` after startup
+
+### Development Workflow
+
+1. **Follow layered architecture**: Controller → Service → Repository pattern
+2. **Use existing patterns**: Reference `auth` and `user` modules for consistency
+3. **Validate inputs**: Create Zod schemas for all API endpoints
+4. **Write tests**: Unit tests for business logic, integration tests for APIs
+5. **Follow validation sequence**: lint → build → test before committing
+
+### API Development Patterns
+
+- **Controllers**: Handle HTTP requests, validate inputs, return responses
+- **Services**: Implement business logic, orchestrate repository calls
+- **Repositories**: Abstract data access, handle database operations
+- **Schemas**: Define Zod validation schemas for type safety
+- **Error Handling**: Use custom HTTP error classes with proper status codes
+
+### Database Development
+
+- **Schema Changes**: Update `prisma/schema.prisma`, run migrations
+- **Queries**: Use Prisma client with type safety
+- **Testing**: Use Testcontainers for integration tests with real databases
+- **Seeding**: Add sample data in `scripts/seed.ts` for development
+
+### Security Considerations
+
+- **Authentication**: Use JWT tokens with proper expiration
+- **Password Hashing**: Use bcrypt with configurable salt rounds
+- **Input Validation**: Validate all inputs with Zod schemas
+- **Error Messages**: Sanitize error responses to prevent information leakage
+
+## Quick Reference
+
+### Common Development Commands
+
+```bash
+npm run dev               # Start development server
+npm run db:studio         # Open database UI
+npm run docker:shell      # Access container shell
+npm run docker:logs       # View container logs
+npm test                  # Run all tests
+npm run lint:fix          # Fix linting issues
+```
+
+### API Endpoints
+
+```bash
+GET  /health              # Health check
+POST /api/auth/login      # User authentication
+POST /api/auth/logout     # User logout
+GET  /api/users/profile   # Get user profile
+```
+
+### Debugging & Troubleshooting
+
+- **Database Issues**: Check `docker-compose` services, run `npm run setup:db`
+- **Redis Connection**: Verify Redis container is running and accessible
+- **Type Errors**: Run `npm run db:generate` to update Prisma client
+- **Test Failures**: Check Testcontainer logs, verify database setup
+
+### Production Debugging
+
+- **ECS Service**: Check service status in AWS Console (us-east-2 region)
+- **Container Logs**: Use CloudWatch logs for production debugging
+- **Health Checks**: Monitor `/health` endpoint for Redis connectivity
+- **Load Balancer**: Verify ALB target health and routing configuration
+
+---
+
+**Integration with Planning**: Always reference issues from [`onemployment-planning`](https://github.com/onemployment/onemployment-planning) repository using format: `Epic: onemployment-planning#X`, `Design: onemployment-planning#Y`
