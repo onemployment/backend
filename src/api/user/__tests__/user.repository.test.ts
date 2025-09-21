@@ -1,8 +1,8 @@
+import { UserRepository } from '../user.repository';
 import {
-  UserRepository,
   UserCreationData,
   ProfileUpdateData,
-} from '../user.repository';
+} from '../contracts/user.repository.contract';
 import { PrismaClient, User } from '@prisma/client';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 

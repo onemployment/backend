@@ -1,21 +1,19 @@
 import { User } from '@prisma/client';
 import { LoginRequest } from './auth.schema';
-import { IAuthRepository } from './auth.repository';
-import { IPasswordStrategy } from './strategies/password-strategy.interface';
+import { IAuthRepository } from './contracts/auth.repository.contract';
+import { IPasswordStrategy } from './strategies/contracts/password-strategy.contract';
 import { JWTUtil } from './utils/jwt.util';
 import { UnauthorizedError } from '../../common/error/http-errors';
+import { IAuthService } from './contracts/auth.service.contract';
 
-export interface IAuthService {
-  // Returns domain model + token, NOT API response shape
-  loginUser(credentials: LoginRequest): Promise<{ user: User; token: string }>;
-}
-
-export class AuthService implements IAuthService {
+export class AuthService extends IAuthService {
   constructor(
     private readonly authRepository: IAuthRepository,
     private readonly passwordStrategy: IPasswordStrategy,
     private readonly jwtUtil: JWTUtil
-  ) {}
+  ) {
+    super();
+  }
 
   async loginUser(
     credentials: LoginRequest

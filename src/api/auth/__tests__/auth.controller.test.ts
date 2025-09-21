@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthController } from '../auth.controller';
-import { IAuthService } from '../auth.service';
+import { IAuthService } from '../contracts/auth.service.contract';
 import { User } from '@prisma/client';
 
 jest.mock('../../../common/logger/logger');

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { User } from '@prisma/client';
-import { IUserService } from './user.service';
+import { IUserService } from './contracts/user.service.contract';
 import {
   UserRegistrationRequest,
   UserProfileUpdateRequest,

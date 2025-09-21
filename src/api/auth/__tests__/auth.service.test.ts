@@ -1,6 +1,6 @@
 import { AuthService } from '../auth.service';
-import { IAuthRepository } from '../auth.repository';
-import { IPasswordStrategy } from '../strategies/password-strategy.interface';
+import { IAuthRepository } from '../contracts/auth.repository.contract';
+import { IPasswordStrategy } from '../strategies/contracts/password-strategy.contract';
 import { JWTUtil } from '../utils/jwt.util';
 import { User } from '@prisma/client';
 import { UnauthorizedError } from '../../../common/error/http-errors';

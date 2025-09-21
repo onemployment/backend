@@ -1,20 +1,11 @@
 import { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
+import { IAuthRepository } from './contracts/auth.repository.contract';
 
-export interface IAuthRepository {
-  // Returns domain models, not API response shapes
-  findByEmail(email: string): Promise<User | null>;
-  findByGoogleId(googleId: string): Promise<User | null>;
-
-  // Activity tracking (returns updated user)
-  updateLastLogin(userId: string): Promise<User>;
-
-  // Account linking (returns domain model)
-  linkGoogleAccount(userId: string, googleId: string): Promise<User>;
-}
-
-export class AuthRepository implements IAuthRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class AuthRepository extends IAuthRepository {
+  constructor(private readonly prisma: PrismaClient) {
+    super();
+  }
 
   public async findByEmail(email: string): Promise<User | null> {
     return await this.prisma.user.findUnique({

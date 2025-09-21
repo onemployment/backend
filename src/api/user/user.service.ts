@@ -1,6 +1,6 @@
 import { User } from '@prisma/client';
-import { IUserRepository } from './user.repository';
-import { IPasswordStrategy } from '../auth/strategies/password-strategy.interface';
+import { IUserRepository } from './contracts/user.repository.contract';
+import { IPasswordStrategy } from '../auth/strategies/contracts/password-strategy.contract';
 import { JWTUtil } from '../auth/utils/jwt.util';
 import { UsernameSuggestionsUtil } from './utils/username-suggestions.util';
 import { ValidationUtil } from './utils/validation.util';
@@ -13,33 +13,17 @@ import {
   NotFoundError,
   BadRequestError,
 } from '../../common/error/http-errors';
+import { IUserService } from './contracts/user.service.contract';
 
-export interface IUserService {
-  // Returns domain models + primitives, NOT API response shapes
-  registerUser(
-    userData: UserRegistrationRequest
-  ): Promise<{ user: User; token: string }>;
-  getUserProfile(userId: string): Promise<User>;
-  updateUserProfile(
-    userId: string,
-    updates: UserProfileUpdateRequest
-  ): Promise<User>;
-
-  // Validation services return primitive data structures
-  validateUsername(
-    username: string
-  ): Promise<{ available: boolean; suggestions?: string[] }>;
-  validateEmail(email: string): Promise<{ available: boolean }>;
-  suggestUsernames(baseUsername: string): Promise<string[]>;
-}
-
-export class UserService implements IUserService {
+export class UserService extends IUserService {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly passwordStrategy: IPasswordStrategy,
     private readonly jwtUtil: JWTUtil,
     private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
-  ) {}
+  ) {
+    super();
+  }
 
   async registerUser(
     userData: UserRegistrationRequest

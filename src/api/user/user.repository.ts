@@ -1,40 +1,14 @@
 import { PrismaClient, User } from '@prisma/client';
+import {
+  IUserRepository,
+  UserCreationData,
+  ProfileUpdateData,
+} from './contracts/user.repository.contract';
 
-export interface UserCreationData {
-  email: string;
-  username: string;
-  passwordHash: string;
-  firstName: string;
-  lastName: string;
-  accountCreationMethod: 'local' | 'google';
-}
-
-export interface ProfileUpdateData {
-  firstName?: string;
-  lastName?: string;
-  displayName?: string | null;
-}
-
-export interface IUserRepository {
-  // User creation (returns domain model)
-  createUser(userData: UserCreationData): Promise<User>;
-
-  // Profile management (returns domain models)
-  findById(id: string): Promise<User | null>;
-  updateProfile(id: string, updates: ProfileUpdateData): Promise<User>;
-
-  // Validation queries (returns primitives)
-  findByEmail(email: string): Promise<User | null>;
-  findByUsername(username: string): Promise<User | null>;
-  isEmailTaken(email: string): Promise<boolean>;
-  isUsernameTaken(username: string): Promise<boolean>; // case-insensitive check
-
-  // Username conflict resolution (returns domain models)
-  findUsersByUsernamePrefix(prefix: string): Promise<User[]>;
-}
-
-export class UserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class UserRepository extends IUserRepository {
+  constructor(private readonly prisma: PrismaClient) {
+    super();
+  }
 
   public async createUser(userData: UserCreationData): Promise<User> {
     return await this.prisma.user.create({

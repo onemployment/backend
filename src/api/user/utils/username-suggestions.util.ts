@@ -1,4 +1,4 @@
-import { IUserRepository } from '../user.repository';
+import { IUserRepository } from '../contracts/user.repository.contract';
 
 // Ensure unique timestamp-based fallbacks even within the same millisecond
 let __lastFallbackTs = 0;

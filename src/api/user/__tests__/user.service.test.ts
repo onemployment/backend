@@ -1,6 +1,6 @@
 import { UserService } from '../user.service';
-import { IUserRepository } from '../user.repository';
-import { IPasswordStrategy } from '../../auth/strategies/password-strategy.interface';
+import { IUserRepository } from '../contracts/user.repository.contract';
+import { IPasswordStrategy } from '../../auth/strategies/contracts/password-strategy.contract';
 import { JWTUtil } from '../../auth/utils/jwt.util';
 import { UsernameSuggestionsUtil } from '../utils/username-suggestions.util';
 import { User } from '@prisma/client';

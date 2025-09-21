@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { UserController } from '../user.controller';
-import { IUserService } from '../user.service';
+import { IUserService } from '../contracts/user.service.contract';
 import { User } from '@prisma/client';
 
 jest.mock('../../../common/logger/logger');

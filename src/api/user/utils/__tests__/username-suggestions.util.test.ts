@@ -1,5 +1,5 @@
 import { UsernameSuggestionsUtil } from '../username-suggestions.util';
-import { IUserRepository } from '../../../user/user.repository';
+import { IUserRepository } from '../../../user/contracts/user.repository.contract';
 
 describe('UsernameSuggestionsUtil', () => {
   let usernameSuggestionsUtil: UsernameSuggestionsUtil;

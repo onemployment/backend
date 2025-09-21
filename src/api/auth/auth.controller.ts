@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '@prisma/client';
 import { LoginRequest, LoginResponse } from './auth.schema';
-import { IAuthService } from './auth.service';
+import { IAuthService } from './contracts/auth.service.contract';
 
 export class AuthController {
   constructor(private readonly authService: IAuthService) {}
