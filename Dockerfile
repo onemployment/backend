@@ -15,8 +15,8 @@ RUN npx prisma generate
 
 COPY . .
 
-RUN npm run build
+RUN npm run nest:build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "nest:start:prod"]
