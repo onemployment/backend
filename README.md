@@ -9,7 +9,6 @@ A production-ready Node.js TypeScript API for user management and authentication
 - **Username & Email Validation**: Real-time availability checking and suggestions
 - **JWT Security**: 8-hour tokens with proper validation middleware
 - **PostgreSQL Integration**: Prisma ORM with type-safe database access and migrations
-- **Redis Caching**: Session management and performance optimization
 - **Comprehensive Testing**: Unit and integration tests with Testcontainers
 - **Production Deployment**: Automated CI/CD pipeline to AWS ECS
 
@@ -18,7 +17,6 @@ A production-ready Node.js TypeScript API for user management and authentication
 - **Runtime**: Node.js 23+ with TypeScript 5.9
 - **Framework**: Express.js 5.1
 - **Database**: PostgreSQL 15.8 with Prisma ORM 6.15+
-- **Caching**: Redis 8
 - **Authentication**: JWT with bcrypt password hashing
 - **Validation**: Zod schemas with runtime type checking
 - **Testing**: Jest with Testcontainers for integration tests
@@ -187,7 +185,6 @@ Key variables in `.env`:
 NODE_ENV=development
 PORT=3000
 POSTGRES_DB_URL=postgresql://user:pass@localhost:5432/db
-REDIS_URL=redis://localhost:6379
 JWT_SECRET=your-secure-jwt-secret-here
 SALT_ROUNDS=12
 ```
@@ -231,5 +228,4 @@ The project includes automated CI/CD pipeline for AWS ECS deployment. Production
 
 - AWS ECS/Fargate for container orchestration
 - RDS PostgreSQL for database
-- ElastiCache Redis for caching
 - ECR for container registry

@@ -24,8 +24,7 @@ flowchart TD
 
   %% Data layer group
   subgraph Data_Layer[Data Layer]
-    REDIS[ElastiCache Redis<br/>cache.t2.micro • port 6379<br/>Sessions & cache • FREE TIER]
-    RDS[RDS PostgreSQL<br/>db.t3.micro • port 5432<br/>Primary database]
+    RDS[RDS PostgreSQL<br/>db.t3.micro • port 5432<br/>Primary database with Prisma ORM]
   end
 
   %% Frontend group
@@ -38,7 +37,6 @@ flowchart TD
   %% Connections
   R53 -->|api.onemployment.org| ALB
   R53 -->|apex & www| CF
-  ECS_TASK --> REDIS
   ECS_TASK --> RDS
 ```
 
@@ -48,7 +46,7 @@ The onemployment platform is a modern web application built on AWS services, des
 
 - **Presentation Tier**: React SPA delivered via CloudFront CDN
 - **Application Tier**: Node.js API running on ECS Fargate
-- **Data Tier**: Redis for caching/sessions and PostgreSQL for persistent data
+- **Data Tier**: PostgreSQL for persistent data with Prisma ORM
 
 ## AWS Resources
 
@@ -62,7 +60,6 @@ The onemployment platform is a modern web application built on AWS services, des
 ### Data & Storage Services
 
 - **RDS PostgreSQL**: Managed relational database for primary data
-- **ElastiCache Redis**: In-memory cache for sessions and temporary data
 - **S3 Bucket**: Static website hosting for React frontend
 - **AWS Secrets Manager**: Secure credential storage
 
@@ -102,7 +99,7 @@ The onemployment platform is a modern web application built on AWS services, des
 - **Encryption at Rest**: RDS and S3 encryption enabled
 - **Encryption in Transit**: HTTPS/TLS for all client communication
 - **Database Security**: PostgreSQL in private subnets with security group restrictions
-- **Session Management**: Redis-based sessions with secure token handling
+- **Session Management**: JWT-based stateless authentication with secure token handling
 
 ## Traffic Flow
 
@@ -119,14 +116,14 @@ The onemployment platform is a modern web application built on AWS services, des
 2. Route 53 resolves to Application Load Balancer
 3. ALB terminates SSL and forwards to ECS service
 4. ECS Fargate containers process requests
-5. Backend connects to Redis (sessions) and PostgreSQL (data)
+5. Backend connects to PostgreSQL (data) with Prisma ORM
 
 ## Cost Optimization
 
 - **Free Tier Utilization**: Designed to maximize AWS Free Tier benefits
 - **Right-Sized Resources**: Minimal compute resources for current load
 - **Serverless Components**: Pay-per-use pricing with ECS Fargate
-- **Efficient Caching**: Redis and CloudFront reduce database load
+- **Efficient Caching**: CloudFront CDN reduces backend load
 
 ## High Availability & Resilience
 

@@ -17,10 +17,6 @@ export class AppConfigService {
     return this.configService.get<string>('NODE_ENV', 'development');
   }
 
-  get redisUrl(): string {
-    return this.configService.get<string>('REDIS_URL') || '';
-  }
-
   get databaseUrl(): string {
     return this.configService.get<string>('POSTGRES_DB_URL') || '';
   }

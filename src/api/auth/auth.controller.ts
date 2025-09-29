@@ -24,7 +24,6 @@ export class AuthController {
 
   public logoutUser = async (req: Request, res: Response): Promise<void> => {
     // JWT is stateless, so just return success
-    // In future: could implement JWT blacklisting with Redis
     res.status(200).json({ message: 'Logout successful' });
   };
 

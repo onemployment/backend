@@ -10,22 +10,18 @@ import { BcryptStrategy } from './api/auth/strategies/BcryptStrategy';
 import { JWTUtil } from './api/auth/utils/jwt.util';
 import { UsernameSuggestionsUtil } from './api/user/utils/username-suggestions.util';
 import { initializeJwtMiddleware } from './middleware/jwt-auth.middleware';
-import { RedisClientService } from './infra/redis/client';
 import { PrismaClient } from '@prisma/client';
 import { config } from './config';
 import { logger } from './common/logger/logger';
 
 interface ServerWithClients extends http.Server {
-  redisClient?: RedisClientService;
   prismaClient?: PrismaClient;
 }
 
 async function bootstrap(): Promise<ServerWithClients> {
-  const redisClient = new RedisClientService(config.redisUrl);
   const prismaClient = new PrismaClient();
 
   try {
-    await redisClient.connect();
     await prismaClient.$connect();
   } catch (error) {
     logger.error('Bootstrap failed: Database connection error:', {
@@ -78,7 +74,6 @@ async function bootstrap(): Promise<ServerWithClients> {
     process.exit(1);
   });
 
-  server.redisClient = redisClient;
   server.prismaClient = prismaClient;
 
   return server;
@@ -102,20 +97,6 @@ async function bootstrap(): Promise<ServerWithClients> {
       await new Promise<void>((resolve, reject) => {
         server.close((err) => (err ? reject(err) : resolve()));
       });
-
-      if (server.redisClient) {
-        try {
-          await server.redisClient.quit();
-        } catch (quitError) {
-          logger.warn('Redis quit() failed, falling back to disconnect():', {
-            error:
-              quitError instanceof Error
-                ? quitError.message
-                : String(quitError),
-          });
-          await server.redisClient.disconnect();
-        }
-      }
 
       if (server.prismaClient) {
         try {

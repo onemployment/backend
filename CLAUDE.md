@@ -3,15 +3,14 @@
 ## Repository Context
 
 **Purpose**: Production-ready Node.js/TypeScript API providing authentication and core platform services
-**Current Status**: ✅ Production deployment on AWS ECS with Redis authentication
-**Key Technologies**: Node.js, Express.js, TypeScript, Redis, PostgreSQL (Prisma), JWT, bcrypt, Zod
+**Current Status**: ✅ Production deployment on AWS ECS with PostgreSQL backend
+**Key Technologies**: Node.js, Express.js, TypeScript, PostgreSQL (Prisma), JWT, bcrypt, Zod
 
 **Production Environment**:
 
 - **Live API**: https://api.onemployment.org (ECS Fargate + Application Load Balancer)
 - **Health Check**: https://api.onemployment.org/health
 - **Container Registry**: `062440546828.dkr.ecr.us-east-2.amazonaws.com/onemployment/api`
-- **Redis**: ElastiCache cluster for sessions and caching
 
 ## Development Environment
 
@@ -21,7 +20,7 @@
 # Development with hot reload
 npm run dev
 
-# Full Docker environment (Redis + PostgreSQL + API)
+# Full Docker environment (PostgreSQL + API)
 npm run dev:build
 npm run dev:start
 
@@ -89,8 +88,7 @@ src/
 │   ├── error/            # HTTP error classes & handling
 │   └── logger/           # Structured logging (Pino)
 ├── config/               # Environment configuration
-├── infra/                # Infrastructure services
-│   └── redis/            # Redis client & utilities
+├── infra/                # Infrastructure services (removed Redis)
 ├── middleware/           # Express middleware
 ├── types/                # TypeScript definitions
 └── utils.ts              # Utility functions
@@ -117,7 +115,7 @@ src/
 
 - **Unit Tests**: `src/**/__tests__/` - 21 test files covering business logic
 - **Integration Tests**: `test/integration/` - 6 test files using Testcontainers
-- **Test Database**: Isolated PostgreSQL and Redis via Docker containers
+- **Test Database**: Isolated PostgreSQL via Docker containers
 
 ### Testing Approach
 
@@ -140,8 +138,7 @@ npm run test:int          # Integration tests only (real databases)
 
 - **AWS ECS Fargate**: Container orchestration with `onemployment-cluster`
 - **Service Configuration**: `backend-service` (1 task, 256 CPU, 512 MB memory)
-- **ElastiCache Redis**: Session storage and caching layer
-- **RDS PostgreSQL**: Persistent data storage (integration pending)
+- **RDS PostgreSQL**: Persistent data storage with Prisma ORM
 - **Application Load Balancer**: HTTPS termination and health checks
 
 ### Automated Deployment Pipeline
@@ -165,14 +162,13 @@ npm run test:int          # Integration tests only (real databases)
 PORT=3000                    # Server port
 HOST=0.0.0.0                # Server host
 NODE_ENV=production          # Environment mode
-REDIS_URL=                   # Redis connection string
 POSTGRES_DB_URL=             # PostgreSQL connection string
 SALT_ROUNDS=12               # bcrypt salt rounds
 ```
 
 ### Health Monitoring
 
-- **Health Endpoint**: `/health` with Redis connection verification
+- **Health Endpoint**: `/health` with database connection verification
 - **Structured Logging**: Pino logger for production monitoring
 - **Graceful Shutdown**: SIGTERM/SIGINT handling
 - **ECS Health Checks**: Container-level health monitoring
@@ -241,7 +237,6 @@ GET  /api/users/profile   # Get user profile
 ### Debugging & Troubleshooting
 
 - **Database Issues**: Check `docker-compose` services, run `npm run setup:db`
-- **Redis Connection**: Verify Redis container is running and accessible
 - **Type Errors**: Run `npm run db:generate` to update Prisma client
 - **Test Failures**: Check Testcontainer logs, verify database setup
 
@@ -249,7 +244,7 @@ GET  /api/users/profile   # Get user profile
 
 - **ECS Service**: Check service status in AWS Console (us-east-2 region)
 - **Container Logs**: Use CloudWatch logs for production debugging
-- **Health Checks**: Monitor `/health` endpoint for Redis connectivity
+- **Health Checks**: Monitor `/health` endpoint for database connectivity
 - **Load Balancer**: Verify ALB target health and routing configuration
 
 ---

@@ -136,54 +136,6 @@ describe('Config', () => {
     });
   });
 
-  describe('Redis URL configuration', () => {
-    it('should use REDIS_URL when provided', () => {
-      process.env.REDIS_URL = 'redis://remote:6380';
-
-      delete require.cache[require.resolve('../index')];
-      const { config: freshConfig } = require('../index');
-
-      expect(freshConfig.redisUrl).toBe('redis://remote:6380');
-    });
-
-    it('should default to localhost Redis when REDIS_URL is not provided', () => {
-      process.env.REDIS_URL = '';
-      let freshConfig: typeof config;
-      jest.isolateModules(() => {
-        freshConfig = require('../index').config;
-      });
-      expect(freshConfig!.redisUrl).toBe('redis://localhost:6379');
-    });
-
-    it('should handle various Redis URL formats', () => {
-      const redisUrls = [
-        'redis://localhost:6379',
-        'redis://username:password@host:6379',
-        'rediss://secure-redis:6380',
-        'redis://redis-cluster:6379/0',
-        'redis://:password@host:6379',
-      ];
-
-      redisUrls.forEach((url) => {
-        process.env.REDIS_URL = url;
-        let freshConfig: typeof config;
-        jest.isolateModules(() => {
-          freshConfig = require('../index').config;
-        });
-        expect(freshConfig!.redisUrl).toBe(url);
-      });
-    });
-
-    it('should handle empty REDIS_URL environment variable', () => {
-      process.env.REDIS_URL = '';
-
-      delete require.cache[require.resolve('../index')];
-      const { config: freshConfig } = require('../index');
-
-      expect(freshConfig.redisUrl).toBe('redis://localhost:6379');
-    });
-  });
-
   describe('salt rounds configuration', () => {
     it('should use SALT_ROUNDS when provided', () => {
       process.env.SALT_ROUNDS = '10';
@@ -310,7 +262,6 @@ describe('Config', () => {
       // Set env vars to null-like values
       process.env.PORT = null as unknown as string;
       process.env.HOST = null as unknown as string;
-      process.env.REDIS_URL = null as unknown as string;
 
       delete require.cache[require.resolve('../index')];
       const { config: freshConfig } = require('../index');
@@ -318,7 +269,6 @@ describe('Config', () => {
       // Should fall back to defaults
       expect(freshConfig.port).toBe(3000);
       expect(freshConfig.host).toBe('0.0.0.0');
-      expect(freshConfig.redisUrl).toBe('redis://localhost:6379');
     });
 
     it('should handle undefined environment variables gracefully', () => {
