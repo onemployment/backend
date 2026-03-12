@@ -20,15 +20,27 @@ async function seed() {
       data: [
         {
           username: 'john_doe',
+          email: 'john@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
           passwordHash: passwordHash,
+          accountCreationMethod: 'local',
         },
         {
           username: 'jane_smith',
+          email: 'jane@example.com',
+          firstName: 'Jane',
+          lastName: 'Smith',
           passwordHash: passwordHash,
+          accountCreationMethod: 'local',
         },
         {
           username: 'admin_user',
+          email: 'admin@example.com',
+          firstName: 'Admin',
+          lastName: 'User',
           passwordHash: passwordHash,
+          accountCreationMethod: 'local',
         },
       ],
     });
