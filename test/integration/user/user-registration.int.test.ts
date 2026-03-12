@@ -1,26 +1,29 @@
 import request from 'supertest';
-import { Application } from 'express';
+import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../../src/database/prisma.service';
 import {
   createTestApp,
   createTestUser,
   createTestUserData,
   TestAppSetup,
 } from '../helpers/utils';
-import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PrismaClient } from '@prisma/client';
-
-const globalWithPostgres = global as typeof globalThis & {
-  postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: PrismaClient;
-};
 
 describe('User Registration Integration Tests', () => {
   let testSetup: TestAppSetup;
-  let app: Application;
+  let app: INestApplication;
+  let jwtService: JwtService;
+  let prismaService: PrismaService;
 
-  beforeEach(() => {
-    testSetup = createTestApp(globalWithPostgres.prismaClient);
+  beforeAll(async () => {
+    testSetup = await createTestApp();
     app = testSetup.app;
+    jwtService = testSetup.jwtService;
+    prismaService = testSetup.prismaService;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('POST /user - Local User Registration', () => {
@@ -34,7 +37,7 @@ describe('User Registration Integration Tests', () => {
           lastName: 'User',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(201);
@@ -66,9 +69,7 @@ describe('User Registration Integration Tests', () => {
         });
 
         // Verify JWT token contains proper claims
-        const payload = await testSetup.jwtUtil.validateToken(
-          response.body.token
-        );
+        const payload = jwtService.verify(response.body.token);
         expect(payload.sub).toBe(response.body.user.id);
         expect(payload.email).toBe('newuser@example.com');
         expect(payload.username).toBe('newuser');
@@ -80,10 +81,10 @@ describe('User Registration Integration Tests', () => {
           password: 'HashTest123!',
         });
 
-        await request(app).post('/api/v1/user').send(userData).expect(201);
+        await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
 
         // Verify password was hashed in database
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { email: 'hash@example.com' },
         });
 
@@ -101,12 +102,12 @@ describe('User Registration Integration Tests', () => {
           lastName: 'User',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(201);
 
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { email: 'db@example.com' },
         });
 
@@ -135,7 +136,7 @@ describe('User Registration Integration Tests', () => {
         const email = 'duplicate@example.com';
 
         // First registration
-        await createTestUser(testSetup.userRepository, { email });
+        await createTestUser(prismaService, { email });
 
         // Second registration with same email
         const userData = createTestUserData({
@@ -143,7 +144,7 @@ describe('User Registration Integration Tests', () => {
           username: 'different',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(409);
@@ -157,7 +158,7 @@ describe('User Registration Integration Tests', () => {
         const email = 'case@example.com';
 
         // Create user with lowercase email
-        await createTestUser(testSetup.userRepository, { email });
+        await createTestUser(prismaService, { email });
 
         // Try to register with uppercase email
         const userData = createTestUserData({
@@ -165,7 +166,7 @@ describe('User Registration Integration Tests', () => {
           username: 'different',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(409);
@@ -181,7 +182,7 @@ describe('User Registration Integration Tests', () => {
         const username = 'duplicateuser';
 
         // First registration
-        await createTestUser(testSetup.userRepository, { username });
+        await createTestUser(prismaService, { username });
 
         // Second registration with same username
         const userData = createTestUserData({
@@ -189,7 +190,7 @@ describe('User Registration Integration Tests', () => {
           username,
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(409);
@@ -203,7 +204,7 @@ describe('User Registration Integration Tests', () => {
         const username = 'caseuser';
 
         // Create user with lowercase username
-        await createTestUser(testSetup.userRepository, { username });
+        await createTestUser(prismaService, { username });
 
         // Try to register with uppercase username
         const userData = createTestUserData({
@@ -211,7 +212,7 @@ describe('User Registration Integration Tests', () => {
           username: 'CASEUSER',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(409);
@@ -224,7 +225,7 @@ describe('User Registration Integration Tests', () => {
 
     describe('input validation', () => {
       it('should require all required fields', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send({})
           .expect(400);
@@ -248,7 +249,7 @@ describe('User Registration Integration Tests', () => {
           for (const email of invalidEmails) {
             const userData = createTestUserData({ email });
 
-            const response = await request(app)
+            const response = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userData)
               .expect(400);
@@ -264,7 +265,7 @@ describe('User Registration Integration Tests', () => {
           const longEmail = 'a'.repeat(250) + '@test.com';
           const userData = createTestUserData({ email: longEmail });
 
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .post('/api/v1/user')
             .send(userData)
             .expect(400);
@@ -289,7 +290,7 @@ describe('User Registration Integration Tests', () => {
           for (const password of weakPasswords) {
             const userData = createTestUserData({ password });
 
-            const response = await request(app)
+            const response = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userData);
 
@@ -315,7 +316,7 @@ describe('User Registration Integration Tests', () => {
               password,
             });
 
-            await request(app).post('/api/v1/user').send(userData).expect(201);
+            await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
           }
         });
 
@@ -324,7 +325,7 @@ describe('User Registration Integration Tests', () => {
           const longPassword = 'A1!' + 'a'.repeat(100);
           const userData = createTestUserData({ password: longPassword });
 
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .post('/api/v1/user')
             .send(userData)
             .expect(400);
@@ -354,7 +355,7 @@ describe('User Registration Integration Tests', () => {
               username,
             });
 
-            const response = await request(app)
+            const response = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userData);
 
@@ -387,7 +388,7 @@ describe('User Registration Integration Tests', () => {
               username,
             });
 
-            await request(app).post('/api/v1/user').send(userData).expect(201);
+            await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
           }
         });
       });
@@ -406,7 +407,7 @@ describe('User Registration Integration Tests', () => {
               firstName: name,
             });
 
-            const responseFirst = await request(app)
+            const responseFirst = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userDataFirst);
 
@@ -422,7 +423,7 @@ describe('User Registration Integration Tests', () => {
               lastName: name,
             });
 
-            const responseLast = await request(app)
+            const responseLast = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userDataLast);
 
@@ -452,7 +453,7 @@ describe('User Registration Integration Tests', () => {
               lastName: name,
             });
 
-            const response = await request(app)
+            const response = await request(app.getHttpServer())
               .post('/api/v1/user')
               .send(userData);
 
@@ -478,16 +479,16 @@ describe('User Registration Integration Tests', () => {
           username: 'indexuser',
         });
 
-        await request(app).post('/api/v1/user').send(userData).expect(201);
+        await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
 
         // Test email index
-        const userByEmail = await testSetup.prismaClient.user.findUnique({
+        const userByEmail = await prismaService.user.findUnique({
           where: { email: 'index@example.com' },
         });
         expect(userByEmail).toBeTruthy();
 
         // Test username index
-        const userByUsername = await testSetup.prismaClient.user.findUnique({
+        const userByUsername = await prismaService.user.findUnique({
           where: { username: 'indexuser' },
         });
         expect(userByUsername).toBeTruthy();
@@ -498,7 +499,7 @@ describe('User Registration Integration Tests', () => {
         const registrationPromises = Array(3)
           .fill(null)
           .map((_, i) =>
-            request(app)
+            request(app.getHttpServer())
               .post('/api/v1/user')
               .send(
                 createTestUserData({
@@ -518,7 +519,7 @@ describe('User Registration Integration Tests', () => {
         });
 
         // Verify all users were created
-        const users = await testSetup.prismaClient.user.findMany({
+        const users = await prismaService.user.findMany({
           where: {
             email: {
               in: [
@@ -537,12 +538,12 @@ describe('User Registration Integration Tests', () => {
           email: 'integrity@example.com',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(userData)
           .expect(201);
 
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { id: response.body.user.id },
         });
 

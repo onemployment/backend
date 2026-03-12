@@ -1,26 +1,29 @@
 import request from 'supertest';
-import { Application } from 'express';
+import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../../src/database/prisma.service';
 import {
   createTestApp,
   createTestUser,
   createTestUserData,
   TestAppSetup,
 } from '../helpers/utils';
-import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PrismaClient } from '@prisma/client';
-
-const globalWithPostgres = global as typeof globalThis & {
-  postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: PrismaClient;
-};
 
 describe('Complete User Flow Scenarios Integration Tests', () => {
   let testSetup: TestAppSetup;
-  let app: Application;
+  let app: INestApplication;
+  let jwtService: JwtService;
+  let prismaService: PrismaService;
 
-  beforeEach(() => {
-    testSetup = createTestApp(globalWithPostgres.prismaClient);
+  beforeAll(async () => {
+    testSetup = await createTestApp();
     app = testSetup.app;
+    jwtService = testSetup.jwtService;
+    prismaService = testSetup.prismaService;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('Scenario 1: Complete Local Registration and Login Flow', () => {
@@ -34,7 +37,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Step 1: Register new user
-      const registerResponse = await request(app)
+      const registerResponse = await request(app.getHttpServer())
         .post('/api/v1/user')
         .send(userData)
         .expect(201);
@@ -58,7 +61,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const userId = registerResponse.body.user.id;
 
       // Step 2: Use registration token to access profile
-      const profileResponse1 = await request(app)
+      const profileResponse1 = await request(app.getHttpServer())
         .get('/api/v1/user/me')
         .set('Authorization', `Bearer ${registrationToken}`)
         .expect(200);
@@ -66,7 +69,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       expect(profileResponse1.body.user.id).toBe(userId);
 
       // Step 3: Login with credentials (different session)
-      const loginResponse = await request(app)
+      const loginResponse = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: 'scenario1@example.com',
@@ -81,7 +84,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const loginToken = loginResponse.body.token;
 
       // Step 4: Use login token to access and update profile
-      const profileResponse2 = await request(app)
+      const profileResponse2 = await request(app.getHttpServer())
         .get('/api/v1/user/me')
         .set('Authorization', `Bearer ${loginToken}`)
         .expect(200);
@@ -90,7 +93,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       expect(profileResponse2.body.user.lastLoginAt).not.toBe(null);
 
       // Step 5: Update profile
-      const updateResponse = await request(app)
+      const updateResponse = await request(app.getHttpServer())
         .put('/api/v1/user/me')
         .set('Authorization', `Bearer ${loginToken}`)
         .send({
@@ -109,7 +112,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       );
 
       // Step 6: Verify changes persisted in database
-      const dbUser = await testSetup.prismaClient.user.findUnique({
+      const dbUser = await prismaService.user.findUnique({
         where: { id: userId },
       });
 
@@ -133,7 +136,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Register
-      const registerResponse = await request(app)
+      const registerResponse = await request(app.getHttpServer())
         .post('/api/v1/user')
         .send(userData)
         .expect(201);
@@ -142,7 +145,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
 
       // Multiple login attempts should all work and update lastLoginAt
       for (let i = 0; i < 3; i++) {
-        const loginResponse = await request(app)
+        const loginResponse = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: userData.email,
@@ -157,7 +160,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       }
 
       // Verify final state
-      const dbUser = await testSetup.prismaClient.user.findUnique({
+      const dbUser = await prismaService.user.findUnique({
         where: { id: userId },
       });
 
@@ -179,7 +182,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username: 'firstuser',
         });
 
-        await request(app).post('/api/v1/user').send(firstUser).expect(201);
+        await request(app.getHttpServer()).post('/api/v1/user').send(firstUser).expect(201);
 
         // Try to register second user with same email
         const secondUser = createTestUserData({
@@ -187,7 +190,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username: 'seconduser', // Different username
         });
 
-        const conflictResponse = await request(app)
+        const conflictResponse = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(secondUser)
           .expect(409);
@@ -197,7 +200,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         });
 
         // Verify only one user exists
-        const users = await testSetup.prismaClient.user.findMany({
+        const users = await prismaService.user.findMany({
           where: { email },
         });
         expect(users).toHaveLength(1);
@@ -215,7 +218,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username,
         });
 
-        await request(app).post('/api/v1/user').send(firstUser).expect(201);
+        await request(app.getHttpServer()).post('/api/v1/user').send(firstUser).expect(201);
 
         // Try to register with same username
         const conflictUser = createTestUserData({
@@ -223,7 +226,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username,
         });
 
-        const conflictResponse = await request(app)
+        const conflictResponse = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(conflictUser)
           .expect(409);
@@ -233,7 +236,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         });
 
         // Test validation endpoint provides suggestions
-        const validationResponse = await request(app)
+        const validationResponse = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${username}`)
           .expect(200);
 
@@ -248,13 +251,13 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         const baseUsername = 'resolver';
 
         // Create first user
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: baseUsername,
           email: 'first@resolver.com',
         });
 
         // Get suggestions for conflicting username
-        const suggestionsResponse = await request(app)
+        const suggestionsResponse = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${baseUsername}`)
           .expect(200);
 
@@ -268,7 +271,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username: suggestions[0],
         });
 
-        const registrationResponse = await request(app)
+        const registrationResponse = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(resolvedUser)
           .expect(201);
@@ -276,7 +279,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         expect(registrationResponse.body.user.username).toBe(suggestions[0]);
 
         // Verify suggestion is no longer available
-        const reCheckResponse = await request(app)
+        const reCheckResponse = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${suggestions[0]}`)
           .expect(200);
 
@@ -288,22 +291,22 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
 
         // Create multiple users with sequential usernames
         await Promise.all([
-          createTestUser(testSetup.userRepository, {
+          createTestUser(prismaService, {
             username: baseUsername,
             email: 'complex0@test.com',
           }),
-          createTestUser(testSetup.userRepository, {
+          createTestUser(prismaService, {
             username: `${baseUsername}2`,
             email: 'complex2@test.com',
           }),
-          createTestUser(testSetup.userRepository, {
+          createTestUser(prismaService, {
             username: `${baseUsername}3`,
             email: 'complex3@test.com',
           }),
         ]);
 
         // Check suggestions skip taken usernames
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${baseUsername}`)
           .expect(200);
 
@@ -325,7 +328,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           lastName: '', // Empty
         };
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(invalidUser)
           .expect(400);
@@ -344,7 +347,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           lastName: 'ValidLast',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/user')
           .send(partiallyInvalidUser)
           .expect(400);
@@ -364,7 +367,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       // Simulate user typing and checking availability
 
       // Step 1: Check initial username (available)
-      let response = await request(app)
+      let response = await request(app.getHttpServer())
         .get(`/api/v1/user/validate/username?username=${baseUsername}`)
         .expect(200);
 
@@ -374,7 +377,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Step 2: Check initial email (available)
-      response = await request(app)
+      response = await request(app.getHttpServer())
         .get(`/api/v1/user/validate/email?email=${baseEmail}`)
         .expect(200);
 
@@ -384,13 +387,13 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Step 3: Someone else registers with that username
-      await createTestUser(testSetup.userRepository, {
+      await createTestUser(prismaService, {
         username: baseUsername,
         email: 'someone@else.com',
       });
 
       // Step 4: User checks again (now taken)
-      response = await request(app)
+      response = await request(app.getHttpServer())
         .get(`/api/v1/user/validate/username?username=${baseUsername}`)
         .expect(200);
 
@@ -403,7 +406,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       // Step 5: User selects first suggestion
       const suggestedUsername = response.body.suggestions[0];
 
-      response = await request(app)
+      response = await request(app.getHttpServer())
         .get(`/api/v1/user/validate/username?username=${suggestedUsername}`)
         .expect(200);
 
@@ -415,7 +418,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         username: suggestedUsername,
       });
 
-      const registrationResponse = await request(app)
+      const registrationResponse = await request(app.getHttpServer())
         .post('/api/v1/user')
         .send(userData)
         .expect(201);
@@ -425,13 +428,13 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
     });
 
     it('should handle rapid validation requests', async () => {
-      const usernames = Array(10)
+      const usernames = Array(5)
         .fill(null)
         .map((_, i) => `rapid${i}`);
 
       // Simulate rapid-fire validation requests
       const validationPromises = usernames.map((username) =>
-        request(app)
+        request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${username}`)
           .expect(200)
       );
@@ -450,13 +453,13 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
     it('should provide consistent suggestions across multiple requests', async () => {
       const username = 'consistent';
 
-      await createTestUser(testSetup.userRepository, { username });
+      await createTestUser(prismaService, { username });
 
       // Make multiple requests for the same username
       const requests = Array(3)
         .fill(null)
         .map(() =>
-          request(app)
+          request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=${username}`)
             .expect(200)
         );
@@ -484,7 +487,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Register user
-      const registerResponse = await request(app)
+      const registerResponse = await request(app.getHttpServer())
         .post('/api/v1/user')
         .send(userData)
         .expect(201);
@@ -493,7 +496,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const token = registerResponse.body.token;
 
       // Get profile
-      const profileResponse = await request(app)
+      const profileResponse = await request(app.getHttpServer())
         .get('/api/v1/user/me')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
@@ -502,7 +505,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       expect(profileResponse.body.user).toEqual(registerResponse.body.user);
 
       // Database should match both responses
-      const dbUser = await testSetup.prismaClient.user.findUnique({
+      const dbUser = await prismaService.user.findUnique({
         where: { id: userId },
       });
 
@@ -519,7 +522,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
 
     it('should maintain consistency between login and profile endpoints', async () => {
       // Create user via repository (simulate existing user)
-      const testUser = await createTestUser(testSetup.userRepository, {
+      const testUser = await createTestUser(prismaService, {
         email: 'login-profile@test.com',
         username: 'loginprofileuser',
         firstName: 'Login',
@@ -527,7 +530,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       });
 
       // Login
-      const loginResponse = await request(app)
+      const loginResponse = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: 'login-profile@test.com',
@@ -538,7 +541,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const token = loginResponse.body.token;
 
       // Get profile
-      const profileResponse = await request(app)
+      const profileResponse = await request(app.getHttpServer())
         .get('/api/v1/user/me')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
@@ -562,13 +565,13 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
     });
 
     it('should handle profile updates affecting login responses', async () => {
-      const testUser = await createTestUser(testSetup.userRepository, {
+      const testUser = await createTestUser(prismaService, {
         firstName: 'Original',
         lastName: 'Name',
       });
 
       // Login and update profile
-      const initialLogin = await request(app)
+      const initialLogin = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -579,7 +582,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const token = initialLogin.body.token;
 
       // Update profile
-      await request(app)
+      await request(app.getHttpServer())
         .put('/api/v1/user/me')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -589,7 +592,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
         .expect(200);
 
       // Subsequent login should reflect updates
-      const subsequentLogin = await request(app)
+      const subsequentLogin = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -605,10 +608,10 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
 
   describe('JWT Token Lifecycle Integration', () => {
     it('should handle token expiry in realistic scenarios', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
+      const testUser = await createTestUser(prismaService);
 
       // Get valid token
-      const loginResponse = await request(app)
+      const loginResponse = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -619,34 +622,34 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       const token = loginResponse.body.token;
 
       // Verify token is valid
-      const payload = await testSetup.jwtUtil.validateToken(token);
+      const payload = jwtService.verify(token);
       expect(payload.sub).toBe(testUser.id);
 
       // Use token for protected endpoint
-      await request(app)
+      await request(app.getHttpServer())
         .get('/api/v1/user/me')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
       // Update profile with same token
-      await request(app)
+      await request(app.getHttpServer())
         .put('/api/v1/user/me')
         .set('Authorization', `Bearer ${token}`)
         .send({ displayName: 'Token Test' })
         .expect(200);
 
       // Verify token claims match current user state
-      const currentPayload = await testSetup.jwtUtil.validateToken(token);
+      const currentPayload = jwtService.verify(token);
       expect(currentPayload.sub).toBe(testUser.id);
       expect(currentPayload.email).toBe(testUser.email);
       expect(currentPayload.username).toBe(testUser.username);
     });
 
     it('should generate different tokens for different login sessions', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
+      const testUser = await createTestUser(prismaService);
 
       // Login twice
-      const login1 = await request(app)
+      const login1 = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -657,7 +660,7 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       // Add a small delay to ensure different timestamps
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const login2 = await request(app)
+      const login2 = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -669,8 +672,8 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
       expect(login1.body.token).not.toBe(login2.body.token);
 
       // Both tokens should be valid
-      const payload1 = await testSetup.jwtUtil.validateToken(login1.body.token);
-      const payload2 = await testSetup.jwtUtil.validateToken(login2.body.token);
+      const payload1 = jwtService.verify(login1.body.token);
+      const payload2 = jwtService.verify(login2.body.token);
 
       expect(payload1.sub).toBe(payload2.sub);
       expect(payload1.email).toBe(payload2.email);

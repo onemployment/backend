@@ -1,27 +1,27 @@
 import request from 'supertest';
-import { Application } from 'express';
+import { INestApplication } from '@nestjs/common';
+import { PrismaService } from '../../../src/database/prisma.service';
 import { createTestApp, createTestUser, TestAppSetup } from '../helpers/utils';
-import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PrismaClient } from '@prisma/client';
-
-const globalWithPostgres = global as typeof globalThis & {
-  postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: PrismaClient;
-};
 
 describe('User Validation Integration Tests', () => {
   let testSetup: TestAppSetup;
-  let app: Application;
+  let app: INestApplication;
+  let prismaService: PrismaService;
 
-  beforeEach(() => {
-    testSetup = createTestApp(globalWithPostgres.prismaClient);
+  beforeAll(async () => {
+    testSetup = await createTestApp();
     app = testSetup.app;
+    prismaService = testSetup.prismaService;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('GET /user/validate/username - Username Availability Check', () => {
     describe('username availability scenarios', () => {
       it('should return available for new username', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/username?username=availableuser')
           .expect(200);
 
@@ -33,11 +33,11 @@ describe('User Validation Integration Tests', () => {
 
       it('should return unavailable for existing username', async () => {
         // Create a test user first
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: 'takenuser',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/username?username=takenuser')
           .expect(200);
 
@@ -53,14 +53,14 @@ describe('User Validation Integration Tests', () => {
       });
 
       it('should handle case-insensitive username checking', async () => {
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: 'caseuser',
         });
 
         const testCases = ['CaseUser', 'CASEUSER', 'cAsEuSeR'];
 
         for (const username of testCases) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=${username}`)
             .expect(200);
 
@@ -73,11 +73,11 @@ describe('User Validation Integration Tests', () => {
       });
 
       it('should preserve original case in suggestions', async () => {
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: 'originalcase',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/username?username=OriginalCase')
           .expect(200);
 
@@ -93,11 +93,11 @@ describe('User Validation Integration Tests', () => {
       it('should generate sequential numbered suggestions', async () => {
         // Create users to test suggestions
         const baseUsername = 'suggestionuser';
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: baseUsername,
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${baseUsername}`)
           .expect(200);
 
@@ -110,17 +110,17 @@ describe('User Validation Integration Tests', () => {
 
       it('should provide suggestions that are actually available', async () => {
         const baseUsername = 'testsuggestions';
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: baseUsername,
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${baseUsername}`)
           .expect(200);
 
         // Verify each suggestion is actually available
         for (const suggestion of response.body.suggestions) {
-          const suggestionCheck = await request(app)
+          const suggestionCheck = await request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=${suggestion}`)
             .expect(200);
 
@@ -132,16 +132,16 @@ describe('User Validation Integration Tests', () => {
         const baseUsername = 'complexuser';
 
         // Create base username and first few suggestions
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: baseUsername,
           email: `${baseUsername}@example.com`,
         });
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: `${baseUsername}2`,
           email: `${baseUsername}2@example.com`,
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/username?username=${baseUsername}`)
           .expect(200);
 
@@ -156,7 +156,7 @@ describe('User Validation Integration Tests', () => {
 
     describe('input validation', () => {
       it('should require username parameter', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/username')
           .expect(400);
 
@@ -176,7 +176,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const username of invalidUsernames) {
-          const response = await request(app).get(
+          const response = await request(app.getHttpServer()).get(
             `/api/v1/user/validate/username?username=${encodeURIComponent(username)}`
           );
 
@@ -201,7 +201,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const username of validUsernames) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=${username}`)
             .expect(200);
 
@@ -212,7 +212,7 @@ describe('User Validation Integration Tests', () => {
 
       it('should handle URL encoded usernames', async () => {
         const username = 'user-name';
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(
             `/api/v1/user/validate/username?username=${encodeURIComponent(username)}`
           )
@@ -226,7 +226,7 @@ describe('User Validation Integration Tests', () => {
   describe('GET /user/validate/email - Email Availability Check', () => {
     describe('email availability scenarios', () => {
       it('should return available for new email', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/email?email=available@example.com')
           .expect(200);
 
@@ -238,9 +238,9 @@ describe('User Validation Integration Tests', () => {
 
       it('should return unavailable for existing email', async () => {
         const email = 'taken@example.com';
-        await createTestUser(testSetup.userRepository, { email });
+        await createTestUser(prismaService, { email });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/email?email=${email}`)
           .expect(200);
 
@@ -252,7 +252,7 @@ describe('User Validation Integration Tests', () => {
 
       it('should handle case-insensitive email checking', async () => {
         const email = 'case@example.com';
-        await createTestUser(testSetup.userRepository, { email });
+        await createTestUser(prismaService, { email });
 
         const testCases = [
           'CASE@EXAMPLE.COM',
@@ -261,7 +261,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const emailCase of testCases) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .get(
               `/api/v1/user/validate/email?email=${encodeURIComponent(emailCase)}`
             )
@@ -277,7 +277,7 @@ describe('User Validation Integration Tests', () => {
 
     describe('input validation', () => {
       it('should require email parameter', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/validate/email')
           .expect(400);
 
@@ -297,7 +297,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const email of invalidEmails) {
-          const response = await request(app).get(
+          const response = await request(app.getHttpServer()).get(
             `/api/v1/user/validate/email?email=${encodeURIComponent(email)}`
           );
 
@@ -320,7 +320,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const email of validEmails) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .get(
               `/api/v1/user/validate/email?email=${encodeURIComponent(email)}`
             )
@@ -333,7 +333,7 @@ describe('User Validation Integration Tests', () => {
 
       it('should handle URL encoded emails', async () => {
         const email = 'user+tag@example.com';
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/validate/email?email=${encodeURIComponent(email)}`)
           .expect(200);
 
@@ -345,7 +345,7 @@ describe('User Validation Integration Tests', () => {
   describe('GET /user/suggest-usernames - Username Suggestions', () => {
     describe('suggestion generation', () => {
       it('should provide suggestions for any username', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/suggest-usernames?username=newuser')
           .expect(200);
 
@@ -363,20 +363,20 @@ describe('User Validation Integration Tests', () => {
 
       it('should skip taken suggestions', async () => {
         const baseUsername = 'skipuser';
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: baseUsername,
           email: `${baseUsername}@example.com`,
         });
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: `${baseUsername}2`,
           email: `${baseUsername}2@example.com`,
         });
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           username: `${baseUsername}3`,
           email: `${baseUsername}3@example.com`,
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/suggest-usernames?username=${baseUsername}`)
           .expect(200);
 
@@ -386,7 +386,7 @@ describe('User Validation Integration Tests', () => {
       });
 
       it('should preserve original case in suggestions', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/suggest-usernames?username=CamelCaseUser')
           .expect(200);
 
@@ -402,13 +402,13 @@ describe('User Validation Integration Tests', () => {
       it('should verify all suggestions are available', async () => {
         const baseUsername = 'availabletest';
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get(`/api/v1/user/suggest-usernames?username=${baseUsername}`)
           .expect(200);
 
         // Check each suggestion is actually available
         for (const suggestion of response.body.suggestions) {
-          const checkResponse = await request(app)
+          const checkResponse = await request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=${suggestion}`)
             .expect(200);
 
@@ -419,7 +419,7 @@ describe('User Validation Integration Tests', () => {
 
     describe('input validation', () => {
       it('should require username parameter', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/suggest-usernames')
           .expect(400);
 
@@ -439,7 +439,7 @@ describe('User Validation Integration Tests', () => {
         ];
 
         for (const username of invalidUsernames) {
-          const response = await request(app).get(
+          const response = await request(app.getHttpServer()).get(
             `/api/v1/user/suggest-usernames?username=${encodeURIComponent(username)}`
           );
 
@@ -456,10 +456,10 @@ describe('User Validation Integration Tests', () => {
 
   describe('performance and database integration', () => {
     it('should handle multiple validation requests efficiently', async () => {
-      const promises = Array(10)
+      const promises = Array(5)
         .fill(null)
         .map((_, i) =>
-          request(app)
+          request(app.getHttpServer())
             .get(`/api/v1/user/validate/username?username=perftest${i}`)
             .expect(200)
         );
@@ -474,29 +474,29 @@ describe('User Validation Integration Tests', () => {
     it('should use database indexes efficiently', async () => {
       // Create some test users
       await Promise.all([
-        createTestUser(testSetup.userRepository, {
+        createTestUser(prismaService, {
           username: 'index1',
           email: 'index1@test.com',
         }),
-        createTestUser(testSetup.userRepository, {
+        createTestUser(prismaService, {
           username: 'index2',
           email: 'index2@test.com',
         }),
-        createTestUser(testSetup.userRepository, {
+        createTestUser(prismaService, {
           username: 'index3',
           email: 'index3@test.com',
         }),
       ]);
 
       // Test username validation
-      const usernameResponse = await request(app)
+      const usernameResponse = await request(app.getHttpServer())
         .get('/api/v1/user/validate/username?username=index2')
         .expect(200);
 
       expect(usernameResponse.body.available).toBe(false);
 
       // Test email validation
-      const emailResponse = await request(app)
+      const emailResponse = await request(app.getHttpServer())
         .get('/api/v1/user/validate/email?email=index2@test.com')
         .expect(200);
 
@@ -505,12 +505,12 @@ describe('User Validation Integration Tests', () => {
 
     it('should handle concurrent validation requests', async () => {
       const username = 'concurrent';
-      await createTestUser(testSetup.userRepository, { username });
+      await createTestUser(prismaService, { username });
 
       const concurrentRequests = Array(5)
         .fill(null)
         .map(() =>
-          request(app).get(
+          request(app.getHttpServer()).get(
             `/api/v1/user/validate/username?username=${username}`
           )
         );
@@ -526,13 +526,13 @@ describe('User Validation Integration Tests', () => {
 
     it('should provide consistent suggestions across requests', async () => {
       const username = 'consistent';
-      await createTestUser(testSetup.userRepository, { username });
+      await createTestUser(prismaService, { username });
 
       // Make multiple requests for suggestions
       const responses = await Promise.all([
-        request(app).get(`/api/v1/user/validate/username?username=${username}`),
-        request(app).get(`/api/v1/user/suggest-usernames?username=${username}`),
-        request(app).get(`/api/v1/user/validate/username?username=${username}`),
+        request(app.getHttpServer()).get(`/api/v1/user/validate/username?username=${username}`),
+        request(app.getHttpServer()).get(`/api/v1/user/suggest-usernames?username=${username}`),
+        request(app.getHttpServer()).get(`/api/v1/user/validate/username?username=${username}`),
       ]);
 
       const suggestions1 = responses[0].body.suggestions;

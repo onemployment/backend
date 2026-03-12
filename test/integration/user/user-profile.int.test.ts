@@ -1,40 +1,43 @@
 import request from 'supertest';
-import { Application } from 'express';
+import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../../src/database/prisma.service';
 import {
   createTestApp,
   createTestUser,
   createTestJWT,
   TestAppSetup,
 } from '../helpers/utils';
-import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PrismaClient } from '@prisma/client';
-
-const globalWithPostgres = global as typeof globalThis & {
-  postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: PrismaClient;
-};
 
 describe('User Profile Management Integration Tests', () => {
   let testSetup: TestAppSetup;
-  let app: Application;
+  let app: INestApplication;
+  let jwtService: JwtService;
+  let prismaService: PrismaService;
 
-  beforeEach(() => {
-    testSetup = createTestApp(globalWithPostgres.prismaClient);
+  beforeAll(async () => {
+    testSetup = await createTestApp();
     app = testSetup.app;
+    jwtService = testSetup.jwtService;
+    prismaService = testSetup.prismaService;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('GET /user/me - Get Current User Profile', () => {
     describe('authenticated profile retrieval', () => {
       it('should return current user profile with valid JWT', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           email: 'profile@example.com',
           username: 'profileuser',
           firstName: 'Profile',
           lastName: 'User',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
@@ -57,19 +60,19 @@ describe('User Profile Management Integration Tests', () => {
 
       it('should handle user with displayName set', async () => {
         // Create user and then update displayName via database
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           firstName: 'John',
           lastName: 'Doe',
         });
 
-        await testSetup.prismaClient.user.update({
+        await prismaService.user.update({
           where: { id: testUser.id },
           data: { displayName: 'Johnny D' },
         });
 
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
@@ -80,18 +83,18 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should handle user with lastLoginAt timestamp', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
+        const testUser = await createTestUser(prismaService);
 
         // Update lastLoginAt via database
         const loginTime = new Date('2024-01-15T10:30:00Z');
-        await testSetup.prismaClient.user.update({
+        await prismaService.user.update({
           where: { id: testUser.id },
           data: { lastLoginAt: loginTime },
         });
 
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
@@ -102,7 +105,7 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('authentication requirements', () => {
       it('should require authentication', async () => {
-        const response = await request(app).get('/api/v1/user/me').expect(401);
+        const response = await request(app.getHttpServer()).get('/api/v1/user/me').expect(401);
 
         expect(response.body).toEqual({
           message: 'No token provided',
@@ -110,7 +113,7 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should reject invalid JWT token', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', 'Bearer invalid.jwt.token')
           .expect(401);
@@ -130,7 +133,7 @@ describe('User Profile Management Integration Tests', () => {
         ];
 
         for (const authHeader of testCases) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .get('/api/v1/user/me')
             .set('Authorization', authHeader)
             .expect(401);
@@ -142,7 +145,7 @@ describe('User Profile Management Integration Tests', () => {
       it('should reject expired JWT token', async () => {
         // We can't easily create an expired token with our JWTUtil
         // So we'll test with invalid token format which should also fail
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', 'Bearer expired.token.here')
           .expect(401);
@@ -155,21 +158,21 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('user data consistency', () => {
       it('should return data consistent with database', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           email: 'consistency@example.com',
           username: 'consistentuser',
           firstName: 'Consistent',
           lastName: 'User',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
 
         // Verify database consistency
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { id: testUser.id },
         });
 
@@ -183,15 +186,15 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should handle user not found in database', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         // Delete user from database after creating token
-        await testSetup.prismaClient.user.delete({
+        await prismaService.user.delete({
           where: { id: testUser.id },
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .get('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(404);
@@ -206,13 +209,13 @@ describe('User Profile Management Integration Tests', () => {
   describe('PUT /user/me - Update Current User Profile', () => {
     describe('successful profile updates', () => {
       it('should update firstName', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           firstName: 'Original',
           lastName: 'User',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -230,7 +233,7 @@ describe('User Profile Management Integration Tests', () => {
         });
 
         // Verify database update
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { id: testUser.id },
         });
         expect(dbUser!.firstName).toBe('Updated');
@@ -238,13 +241,13 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should update lastName', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           firstName: 'Test',
           lastName: 'Original',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -261,10 +264,10 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should update displayName', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -275,20 +278,20 @@ describe('User Profile Management Integration Tests', () => {
         expect(response.body.user.displayName).toBe('Cool Display Name');
 
         // Verify database update
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { id: testUser.id },
         });
         expect(dbUser!.displayName).toBe('Cool Display Name');
       });
 
       it('should update multiple fields at once', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           firstName: 'Old',
           lastName: 'Name',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -308,18 +311,18 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should clear displayName with null', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         // First set a displayName
-        await request(app)
+        await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({ displayName: 'Temporary Name' })
           .expect(200);
 
         // Then clear it
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -333,72 +336,67 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('immutable field protection', () => {
       it('should not update email field', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           email: 'original@example.com',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        // Sending non-whitelisted fields is rejected with 400
+        await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
-          .send({
-            email: 'new@example.com',
-            firstName: 'Updated',
-          })
-          .expect(200);
+          .send({ email: 'new@example.com' })
+          .expect(400);
 
-        // Email should remain unchanged
-        expect(response.body.user.email).toBe('original@example.com');
-        expect(response.body.user.firstName).toBe('Updated');
+        // Email remains unchanged in database
+        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        expect(dbUser!.email).toBe('original@example.com');
       });
 
       it('should not update username field', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           username: 'originaluser',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        // Sending non-whitelisted fields is rejected with 400
+        await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
-          .send({
-            username: 'newusername',
-            firstName: 'Updated',
-          })
-          .expect(200);
+          .send({ username: 'newusername' })
+          .expect(400);
 
-        // Username should remain unchanged
-        expect(response.body.user.username).toBe('originaluser');
-        expect(response.body.user.firstName).toBe('Updated');
+        // Username remains unchanged in database
+        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        expect(dbUser!.username).toBe('originaluser');
       });
 
       it('should not update accountCreationMethod', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        // Sending non-whitelisted fields is rejected with 400
+        await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
-          .send({
-            accountCreationMethod: 'google',
-            firstName: 'Updated',
-          })
-          .expect(200);
+          .send({ accountCreationMethod: 'google' })
+          .expect(400);
 
-        expect(response.body.user.accountCreationMethod).toBe('local');
-        expect(response.body.user.firstName).toBe('Updated');
+        // Account creation method remains unchanged in database
+        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        expect(dbUser!.accountCreationMethod).toBe('local');
       });
     });
 
     describe('input validation', () => {
       it('should validate firstName format', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         const invalidNames = ['', 'John123', 'John@Doe', 'a'.repeat(101)];
 
         for (const firstName of invalidNames) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .put('/api/v1/user/me')
             .set('Authorization', `Bearer ${token}`)
             .send({ firstName })
@@ -411,13 +409,13 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should validate lastName format', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         const invalidNames = ['', 'Smith123', 'Smith@Johnson', 'a'.repeat(101)];
 
         for (const lastName of invalidNames) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .put('/api/v1/user/me')
             .set('Authorization', `Bearer ${token}`)
             .send({ lastName })
@@ -430,13 +428,13 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should validate displayName format', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         const invalidDisplayNames = ['', 'a'.repeat(201)];
 
         for (const displayName of invalidDisplayNames) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .put('/api/v1/user/me')
             .set('Authorization', `Bearer ${token}`)
             .send({ displayName })
@@ -449,8 +447,8 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should accept valid name formats', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         const validUpdates = [
           { firstName: 'John' },
@@ -462,7 +460,7 @@ describe('User Profile Management Integration Tests', () => {
         ];
 
         for (const update of validUpdates) {
-          await request(app)
+          await request(app.getHttpServer())
             .put('/api/v1/user/me')
             .set('Authorization', `Bearer ${token}`)
             .send(update)
@@ -473,7 +471,7 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('authentication requirements', () => {
       it('should require authentication', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .send({
             firstName: 'Test',
@@ -486,7 +484,7 @@ describe('User Profile Management Integration Tests', () => {
       });
 
       it('should reject invalid JWT token', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', 'Bearer invalid.jwt.token')
           .send({
@@ -502,13 +500,13 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('empty update handling', () => {
       it('should handle empty update request', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           firstName: 'Original',
           lastName: 'User',
         });
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const token = createTestJWT(jwtService, testUser);
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({})
@@ -526,12 +524,12 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('database consistency', () => {
       it('should maintain updatedAt timestamp', async () => {
-        const testUser = await createTestUser(testSetup.userRepository);
-        const token = await createTestJWT(testSetup.jwtUtil, testUser);
+        const testUser = await createTestUser(prismaService);
+        const token = createTestJWT(jwtService, testUser);
 
         const originalUpdatedAt = testUser.updatedAt;
 
-        await request(app)
+        await request(app.getHttpServer())
           .put('/api/v1/user/me')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -539,7 +537,7 @@ describe('User Profile Management Integration Tests', () => {
           })
           .expect(200);
 
-        const dbUser = await testSetup.prismaClient.user.findUnique({
+        const dbUser = await prismaService.user.findUnique({
           where: { id: testUser.id },
         });
 

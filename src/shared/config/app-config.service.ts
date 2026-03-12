@@ -22,7 +22,7 @@ export class AppConfigService {
   }
 
   get saltRounds(): number {
-    return this.configService.get<number>('SALT_ROUNDS', 12);
+    return parseInt(this.configService.get<string>('SALT_ROUNDS', '12'), 10);
   }
 
   get jwtSecret(): string {

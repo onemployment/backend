@@ -8,6 +8,7 @@ import {
   Request,
   UseGuards,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { UserService } from './user.service';
@@ -48,7 +49,7 @@ export class UserController {
   @Get('validate/username')
   async validateUsername(@Query('username') username: string) {
     if (!username) {
-      return { available: false, message: 'Username parameter is required' };
+      throw new BadRequestException('Username parameter is required');
     }
     const { available, suggestions } = await this.userService.validateUsername(username);
     return {
@@ -61,7 +62,7 @@ export class UserController {
   @Get('validate/email')
   async validateEmail(@Query('email') email: string) {
     if (!email) {
-      return { available: false, message: 'Email parameter is required' };
+      throw new BadRequestException('Email parameter is required');
     }
     const { available } = await this.userService.validateEmail(email);
     return {
@@ -75,7 +76,7 @@ export class UserController {
   @Get('suggest-usernames')
   async suggestUsernames(@Query('username') username: string) {
     if (!username) {
-      return { suggestions: [], message: 'Username parameter is required' };
+      throw new BadRequestException('Username parameter is required');
     }
     const suggestions = await this.userService.suggestUsernames(username);
     return { suggestions };

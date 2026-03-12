@@ -82,3 +82,17 @@ export const createTestUser = async (
 export const createTestJWT = (jwtService: JwtService, user: User): string => {
   return jwtService.sign({ sub: user.id, email: user.email, username: user.username });
 };
+
+export const createTestUserData = (overrides: {
+  email?: string;
+  username?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+} = {}) => ({
+  email: overrides.email ?? 'default@example.com',
+  username: overrides.username ?? 'defaultuser',
+  password: overrides.password ?? 'DefaultPass123!',
+  firstName: overrides.firstName ?? 'Default',
+  lastName: overrides.lastName ?? 'User',
+});
