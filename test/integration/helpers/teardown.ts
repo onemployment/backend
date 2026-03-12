@@ -1,6 +1,7 @@
 import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../../../src/common/logger/logger';
+
+const logger = { info: console.log, error: console.error };
 
 declare global {
   var postgresContainer: StartedPostgreSqlContainer;
@@ -21,9 +22,8 @@ export default async (): Promise<void> => {
       logger.info('Disconnected from Prisma client');
     }
   } catch (error) {
-    logger.error('Error disconnecting Prisma client:', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error('Error disconnecting Prisma client:');
+    logger.error(error instanceof Error ? error.message : String(error));
   }
 
   try {
@@ -32,9 +32,8 @@ export default async (): Promise<void> => {
       logger.info('Stopped PostgreSQL container');
     }
   } catch (error) {
-    logger.error('Error stopping PostgreSQL container:', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error('Error stopping PostgreSQL container:');
+    logger.error(error instanceof Error ? error.message : String(error));
   }
 
   logger.info('Global teardown completed');

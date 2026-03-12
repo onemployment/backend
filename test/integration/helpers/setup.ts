@@ -3,7 +3,8 @@ import {
   StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../../../src/common/logger/logger';
+
+const logger = { info: console.log, error: console.error };
 
 declare global {
   var postgresContainer: StartedPostgreSqlContainer;
