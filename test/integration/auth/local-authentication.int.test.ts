@@ -1,28 +1,36 @@
 import request from 'supertest';
-import { Application } from 'express';
-import { createTestApp, createTestUser, TestAppSetup } from '../helpers/utils';
+import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../../src/database/prisma.service';
 import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PrismaClient } from '@prisma/client';
+import { createTestApp, createTestUser, createTestJWT, TestAppSetup } from '../helpers/utils';
 
 const globalWithPostgres = global as typeof globalThis & {
   postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: PrismaClient;
+  prismaClient: any;
 };
 
 describe('Local Authentication Integration Tests', () => {
   let testSetup: TestAppSetup;
-  let app: Application;
+  let app: INestApplication;
+  let jwtService: JwtService;
+  let prismaService: PrismaService;
 
-  beforeEach(() => {
-    testSetup = createTestApp(globalWithPostgres.prismaClient);
+  beforeAll(async () => {
+    testSetup = await createTestApp();
     app = testSetup.app;
+    jwtService = testSetup.jwtService;
+    prismaService = testSetup.prismaService;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('POST /auth/login - Local User Authentication', () => {
     describe('successful login scenarios', () => {
       it('should authenticate user with valid email and password', async () => {
-        // Create a test user first
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           email: 'auth@test.com',
           username: 'authuser',
           password: 'AuthPass123!',
@@ -30,7 +38,7 @@ describe('Local Authentication Integration Tests', () => {
           lastName: 'User',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'auth@test.com',
@@ -38,16 +46,13 @@ describe('Local Authentication Integration Tests', () => {
           })
           .expect(200);
 
-        // Verify response structure
         expect(response.body).toHaveProperty('message', 'Login successful');
         expect(response.body).toHaveProperty('token');
         expect(response.body).toHaveProperty('user');
 
-        // Verify JWT token
         expect(typeof response.body.token).toBe('string');
-        expect(response.body.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/); // Basic JWT format
+        expect(response.body.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
 
-        // Verify user data
         expect(response.body.user).toEqual({
           id: testUser.id,
           email: 'auth@test.com',
@@ -57,13 +62,10 @@ describe('Local Authentication Integration Tests', () => {
           displayName: null,
           emailVerified: false,
           createdAt: testUser.createdAt.toISOString(),
-          lastLoginAt: expect.any(String), // Should be updated
+          lastLoginAt: expect.any(String),
         });
 
-        // Verify JWT token contains proper claims
-        const payload = await testSetup.jwtUtil.validateToken(
-          response.body.token
-        );
+        const payload = jwtService.verify(response.body.token);
         expect(payload.sub).toBe(testUser.id);
         expect(payload.email).toBe('auth@test.com');
         expect(payload.username).toBe('authuser');
@@ -72,14 +74,15 @@ describe('Local Authentication Integration Tests', () => {
       });
 
       it('should update lastLoginAt timestamp on successful login', async () => {
-        const testUser = await createTestUser(testSetup.userRepository, {
+        const testUser = await createTestUser(prismaService, {
           email: 'timestamp@test.com',
+          username: 'timestampuser',
           password: 'TimestampPass123!',
         });
 
         const originalLoginTime = testUser.lastLoginAt;
 
-        await request(app)
+        await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'timestamp@test.com',
@@ -87,21 +90,19 @@ describe('Local Authentication Integration Tests', () => {
           })
           .expect(200);
 
-        // Verify lastLoginAt was updated in database
-        const updatedUser =
-          await testSetup.userRepository.findByEmail('timestamp@test.com');
+        const updatedUser = await prismaService.user.findUnique({
+          where: { email: 'timestamp@test.com' },
+        });
         expect(updatedUser).toBeTruthy();
         expect(updatedUser!.lastLoginAt).not.toEqual(originalLoginTime);
         expect(updatedUser!.lastLoginAt).toBeInstanceOf(Date);
-        expect(updatedUser!.lastLoginAt!.getTime()).toBeGreaterThan(
-          Date.now() - 5000
-        ); // Within last 5 seconds
+        expect(updatedUser!.lastLoginAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
       });
     });
 
     describe('authentication failure scenarios', () => {
       it('should reject login with non-existent email', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'nonexistent@test.com',
@@ -115,12 +116,13 @@ describe('Local Authentication Integration Tests', () => {
       });
 
       it('should reject login with incorrect password', async () => {
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           email: 'wrong@test.com',
+          username: 'wronguser',
           password: 'CorrectPass123!',
         });
 
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'wrong@test.com',
@@ -134,16 +136,16 @@ describe('Local Authentication Integration Tests', () => {
       });
 
       it('should handle case-insensitive email lookup', async () => {
-        await createTestUser(testSetup.userRepository, {
+        await createTestUser(prismaService, {
           email: 'case@test.com',
+          username: 'caseuser',
           password: 'CasePass123!',
         });
 
-        // Test with different case variations
         const testCases = ['CASE@TEST.COM', 'Case@Test.Com', 'cAsE@tEsT.cOm'];
 
         for (const emailCase of testCases) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .post('/api/v1/auth/login')
             .send({
               email: emailCase,
@@ -159,7 +161,7 @@ describe('Local Authentication Integration Tests', () => {
 
     describe('input validation', () => {
       it('should require email field', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             password: 'Password123!',
@@ -172,7 +174,7 @@ describe('Local Authentication Integration Tests', () => {
       });
 
       it('should require password field', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'test@example.com',
@@ -193,7 +195,7 @@ describe('Local Authentication Integration Tests', () => {
         ];
 
         for (const email of invalidEmails) {
-          const response = await request(app)
+          const response = await request(app.getHttpServer())
             .post('/api/v1/auth/login')
             .send({
               email,
@@ -208,7 +210,7 @@ describe('Local Authentication Integration Tests', () => {
       });
 
       it('should require non-empty password', async () => {
-        const response = await request(app)
+        const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({
             email: 'test@example.com',
@@ -225,10 +227,13 @@ describe('Local Authentication Integration Tests', () => {
 
   describe('POST /auth/logout - User Logout', () => {
     it('should handle logout request (JWT stateless)', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
-      const token = await testSetup.jwtUtil.generateToken(testUser);
+      const testUser = await createTestUser(prismaService, {
+        email: 'logout@test.com',
+        username: 'logoutuser',
+      });
+      const token = createTestJWT(jwtService, testUser);
 
-      const response = await request(app)
+      const response = await request(app.getHttpServer())
         .post('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
@@ -239,7 +244,7 @@ describe('Local Authentication Integration Tests', () => {
     });
 
     it('should require authentication for logout', async () => {
-      const response = await request(app)
+      const response = await request(app.getHttpServer())
         .post('/api/v1/auth/logout')
         .expect(401);
 
@@ -249,7 +254,7 @@ describe('Local Authentication Integration Tests', () => {
     });
 
     it('should reject invalid JWT token for logout', async () => {
-      const response = await request(app)
+      const response = await request(app.getHttpServer())
         .post('/api/v1/auth/logout')
         .set('Authorization', 'Bearer invalid.jwt.token')
         .expect(401);
@@ -262,9 +267,12 @@ describe('Local Authentication Integration Tests', () => {
 
   describe('JWT token validation', () => {
     it('should generate JWT with 8-hour expiry', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
+      const testUser = await createTestUser(prismaService, {
+        email: 'expiry@test.com',
+        username: 'expiryuser',
+      });
 
-      const response = await request(app)
+      const response = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -272,31 +280,26 @@ describe('Local Authentication Integration Tests', () => {
         })
         .expect(200);
 
-      const payload = await testSetup.jwtUtil.validateToken(
-        response.body.token
-      );
+      const payload = jwtService.verify(response.body.token);
 
-      // Verify 8-hour expiry (28800 seconds)
       const expectedExpiry = payload.iat + 28800;
       expect(payload.exp).toBe(expectedExpiry);
 
-      // Verify expiry is approximately 8 hours from now
       const expiryDate = new Date(payload.exp * 1000);
       const now = new Date();
-      const hoursUntilExpiry =
-        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const hoursUntilExpiry = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       expect(hoursUntilExpiry).toBeGreaterThan(7.9);
       expect(hoursUntilExpiry).toBeLessThan(8.1);
     });
 
     it('should include all required JWT claims', async () => {
-      const testUser = await createTestUser(testSetup.userRepository, {
+      const testUser = await createTestUser(prismaService, {
         email: 'jwt@test.com',
         username: 'jwtuser',
       });
 
-      const response = await request(app)
+      const response = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: 'jwt@test.com',
@@ -304,11 +307,8 @@ describe('Local Authentication Integration Tests', () => {
         })
         .expect(200);
 
-      const payload = await testSetup.jwtUtil.validateToken(
-        response.body.token
-      );
+      const payload = jwtService.verify(response.body.token);
 
-      // Verify all required claims are present
       expect(payload).toHaveProperty('sub', testUser.id);
       expect(payload).toHaveProperty('email', 'jwt@test.com');
       expect(payload).toHaveProperty('username', 'jwtuser');
@@ -317,7 +317,6 @@ describe('Local Authentication Integration Tests', () => {
       expect(payload).toHaveProperty('iat');
       expect(payload).toHaveProperty('exp');
 
-      // Verify no sensitive data in JWT
       expect(payload).not.toHaveProperty('password');
       expect(payload).not.toHaveProperty('passwordHash');
     });
@@ -325,9 +324,12 @@ describe('Local Authentication Integration Tests', () => {
 
   describe('database integration', () => {
     it('should persist login activity tracking', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
+      const testUser = await createTestUser(prismaService, {
+        email: 'dbtrack@test.com',
+        username: 'dbtrackuser',
+      });
 
-      await request(app)
+      await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({
           email: testUser.email,
@@ -335,8 +337,7 @@ describe('Local Authentication Integration Tests', () => {
         })
         .expect(200);
 
-      // Verify database state
-      const dbUser = await testSetup.prismaClient.user.findUnique({
+      const dbUser = await prismaService.user.findUnique({
         where: { email: testUser.email },
       });
 
@@ -346,12 +347,15 @@ describe('Local Authentication Integration Tests', () => {
     });
 
     it('should handle concurrent login attempts', async () => {
-      const testUser = await createTestUser(testSetup.userRepository);
+      const testUser = await createTestUser(prismaService, {
+        email: 'concurrent@test.com',
+        username: 'concurrentuser',
+      });
 
       const loginPromises = Array(5)
         .fill(null)
         .map(() =>
-          request(app).post('/api/v1/auth/login').send({
+          request(app.getHttpServer()).post('/api/v1/auth/login').send({
             email: testUser.email,
             password: testUser.plainPassword,
           })
@@ -359,7 +363,6 @@ describe('Local Authentication Integration Tests', () => {
 
       const responses = await Promise.all(loginPromises);
 
-      // All should succeed
       responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('token');

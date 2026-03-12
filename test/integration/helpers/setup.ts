@@ -28,6 +28,7 @@ beforeAll(async () => {
     .start();
 
   const databaseUrl = globalWithPostgres.postgresContainer.getConnectionUri();
+  process.env.POSTGRES_DB_URL = databaseUrl;
   logger.info(`PostgreSQL container started at: ${databaseUrl}`);
 
   globalWithPostgres.prismaClient = new PrismaClient({
