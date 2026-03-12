@@ -23,3 +23,6 @@ Thumbs.db
 .vscode/
 .idea/
 /src/generated/prisma
+
+# Local planning docs
+docs/plans/
