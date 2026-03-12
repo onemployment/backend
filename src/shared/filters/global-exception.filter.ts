@@ -33,10 +33,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : String(exception)
     );
 
-    response.status(status).json({
-      statusCode: status,
-      message,
-      timestamp: new Date().toISOString(),
-    });
+    response.status(status).json({ message });
   }
 }
