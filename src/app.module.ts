@@ -5,6 +5,7 @@ import { SharedModule } from './shared/shared.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './routes/auth/auth.module';
+import { UserModule } from './routes/user/user.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './routes/auth/auth.module';
     SharedModule,
     HealthModule,
     AuthModule,
+    UserModule,
   ],
 })
 export class AppModule {}
