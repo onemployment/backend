@@ -28,4 +28,8 @@ export class AppConfigService {
   get jwtSecret(): string {
     return this.configService.get<string>('JWT_SECRET') || '';
   }
+
+  get anthropicApiKey(): string {
+    return this.configService.get<string>('ANTHROPIC_API_KEY') || '';
+  }
 }
