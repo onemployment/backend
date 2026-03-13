@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../../../src/database/prisma.service';
+import { PrismaService } from '../../../src/infrastructure/persistence/prisma/prisma.client';
 import {
   createTestApp,
   createTestUser,

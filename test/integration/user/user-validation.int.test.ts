@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../../../src/database/prisma.service';
+import { PrismaService } from '../../../src/infrastructure/persistence/prisma/prisma.client';
 import { createTestApp, createTestUser, TestAppSetup } from '../helpers/utils';
 
 describe('User Validation Integration Tests', () => {

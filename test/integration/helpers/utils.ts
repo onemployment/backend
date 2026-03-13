@@ -7,9 +7,9 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module';
 import { GlobalExceptionFilter } from '../../../src/shared/filters/global-exception.filter';
 import { LoggerService } from '../../../src/shared/logger/logger.service';
-import { PrismaService } from '../../../src/database/prisma.service';
+import { PrismaService } from '../../../src/infrastructure/persistence/prisma/prisma.client';
 import { JwtService } from '@nestjs/jwt';
-import { BcryptStrategy } from '../../../src/modules/auth/strategies/bcrypt.strategy';
+import { BcryptStrategy } from '../../../src/infrastructure/security/bcrypt.strategy';
 import { User } from '@prisma/client';
 
 export interface TestAppSetup {
