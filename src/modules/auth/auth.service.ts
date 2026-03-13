@@ -5,15 +5,15 @@ import {
   IUserRepository,
   USER_REPOSITORY,
 } from '../../domain/user/user.repository.port';
-import { BcryptStrategy } from './strategies/bcrypt.strategy';
+import { IPasswordStrategy, PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    private readonly bcryptStrategy: BcryptStrategy,
-    private readonly jwtService: JwtService
+    @Inject(PASSWORD_STRATEGY) private readonly passwordStrategy: IPasswordStrategy,
+    private readonly jwtService: JwtService,
   ) {}
 
   async loginUser(
@@ -28,7 +28,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isValid = await this.bcryptStrategy.verify(
+    const isValid = await this.passwordStrategy.verify(
       credentials.password,
       user.passwordHash
     );
