@@ -1,10 +1,11 @@
+import { mock } from 'jest-mock-extended';
+import { JwtService } from '@nestjs/jwt';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UserService } from '../user.service';
 import { IUserRepository } from '../../../domain/user/user.repository.port';
+import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
 import { User } from '../../../domain/user/user.entity';
-import { BcryptStrategy } from '../../auth/strategies/bcrypt.strategy';
-import { JwtService } from '@nestjs/jwt';
 import { UsernameSuggestionsUtil } from '../utils/username-suggestions.util';
-import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mockUser: User = {
   id: 'uuid-1',
@@ -27,7 +28,7 @@ const mockUser: User = {
 describe('UserService', () => {
   let userService: UserService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
-  let mockBcryptStrategy: jest.Mocked<BcryptStrategy>;
+  let mockPasswordStrategy: jest.Mocked<IPasswordStrategy>;
   let mockJwtService: jest.Mocked<JwtService>;
   let mockSuggestionsUtil: jest.Mocked<UsernameSuggestionsUtil>;
 
@@ -46,21 +47,19 @@ describe('UserService', () => {
       findUsersByUsernamePrefix: jest.fn(),
     };
 
-    mockBcryptStrategy = {
+    mockPasswordStrategy = {
       hash: jest.fn(),
       verify: jest.fn(),
-    } as unknown as jest.Mocked<BcryptStrategy>;
-    mockJwtService = { sign: jest.fn() } as unknown as jest.Mocked<JwtService>;
-    mockSuggestionsUtil = {
-      generateSuggestions: jest.fn(),
-      isUsernameAvailable: jest.fn(),
-    } as unknown as jest.Mocked<UsernameSuggestionsUtil>;
+    };
+
+    mockJwtService = mock<JwtService>();
+    mockSuggestionsUtil = mock<UsernameSuggestionsUtil>();
 
     userService = new UserService(
       mockUserRepository,
-      mockBcryptStrategy,
+      mockPasswordStrategy,
       mockJwtService,
-      mockSuggestionsUtil
+      mockSuggestionsUtil,
     );
   });
 
@@ -76,7 +75,7 @@ describe('UserService', () => {
     it('should register user and return user + token', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(false);
-      mockBcryptStrategy.hash.mockResolvedValue('hashed');
+      mockPasswordStrategy.hash.mockResolvedValue('hashed');
       mockUserRepository.createUser.mockResolvedValue(mockUser);
       mockJwtService.sign.mockReturnValue('token');
 
@@ -87,17 +86,13 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(
-        ConflictException
-      );
+      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(
-        ConflictException
-      );
+      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -110,9 +105,7 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
-        NotFoundException
-      );
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
     });
   });
 });

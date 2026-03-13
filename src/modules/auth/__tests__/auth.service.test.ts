@@ -1,9 +1,10 @@
-import { AuthService } from '../auth.service';
-import { IUserRepository } from '../../../domain/user/user.repository.port';
-import { User } from '../../../domain/user/user.entity';
-import { BcryptStrategy } from '../strategies/bcrypt.strategy';
+import { mock } from 'jest-mock-extended';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { AuthService } from '../auth.service';
+import { IUserRepository } from '../../../domain/user/user.repository.port';
+import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
+import { User } from '../../../domain/user/user.entity';
 
 const mockUser: User = {
   id: 'test-uuid-123',
@@ -26,7 +27,7 @@ const mockUser: User = {
 describe('AuthService', () => {
   let authService: AuthService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
-  let mockBcryptStrategy: jest.Mocked<BcryptStrategy>;
+  let mockPasswordStrategy: jest.Mocked<IPasswordStrategy>;
   let mockJwtService: jest.Mocked<JwtService>;
 
   beforeEach(() => {
@@ -44,20 +45,14 @@ describe('AuthService', () => {
       findUsersByUsernamePrefix: jest.fn(),
     };
 
-    mockBcryptStrategy = {
+    mockPasswordStrategy = {
       hash: jest.fn(),
       verify: jest.fn(),
-    } as unknown as jest.Mocked<BcryptStrategy>;
+    };
 
-    mockJwtService = {
-      sign: jest.fn(),
-    } as unknown as jest.Mocked<JwtService>;
+    mockJwtService = mock<JwtService>();
 
-    authService = new AuthService(
-      mockUserRepository,
-      mockBcryptStrategy,
-      mockJwtService
-    );
+    authService = new AuthService(mockUserRepository, mockPasswordStrategy, mockJwtService);
   });
 
   describe('loginUser', () => {
@@ -66,7 +61,7 @@ describe('AuthService', () => {
     it('should login successfully with valid credentials', async () => {
       const updatedUser = { ...mockUser, lastLoginAt: new Date() };
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockBcryptStrategy.verify.mockResolvedValue(true);
+      mockPasswordStrategy.verify.mockResolvedValue(true);
       mockUserRepository.updateLastLogin.mockResolvedValue(updatedUser);
       mockJwtService.sign.mockReturnValue('mock-token');
 
@@ -74,34 +69,23 @@ describe('AuthService', () => {
 
       expect(result.token).toBe('mock-token');
       expect(result.user).toEqual(updatedUser);
-      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(
-        mockUser.id
-      );
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(
-        UnauthorizedException
-      );
+      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when passwordHash is null', async () => {
-      mockUserRepository.findByEmail.mockResolvedValue({
-        ...mockUser,
-        passwordHash: null,
-      });
-      await expect(authService.loginUser(credentials)).rejects.toThrow(
-        UnauthorizedException
-      );
+      mockUserRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
+      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockBcryptStrategy.verify.mockResolvedValue(false);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(
-        UnauthorizedException
-      );
+      mockPasswordStrategy.verify.mockResolvedValue(false);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
     });
   });
 });
