@@ -81,7 +81,10 @@ describe('User Registration Integration Tests', () => {
           password: 'HashTest123!',
         });
 
-        await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
+        await request(app.getHttpServer())
+          .post('/api/v1/user')
+          .send(userData)
+          .expect(201);
 
         // Verify password was hashed in database
         const dbUser = await prismaService.user.findUnique({
@@ -316,7 +319,10 @@ describe('User Registration Integration Tests', () => {
               password,
             });
 
-            await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
+            await request(app.getHttpServer())
+              .post('/api/v1/user')
+              .send(userData)
+              .expect(201);
           }
         });
 
@@ -388,7 +394,10 @@ describe('User Registration Integration Tests', () => {
               username,
             });
 
-            await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
+            await request(app.getHttpServer())
+              .post('/api/v1/user')
+              .send(userData)
+              .expect(201);
           }
         });
       });
@@ -479,7 +488,10 @@ describe('User Registration Integration Tests', () => {
           username: 'indexuser',
         });
 
-        await request(app.getHttpServer()).post('/api/v1/user').send(userData).expect(201);
+        await request(app.getHttpServer())
+          .post('/api/v1/user')
+          .send(userData)
+          .expect(201);
 
         // Test email index
         const userByEmail = await prismaService.user.findUnique({

@@ -53,7 +53,11 @@ describe('AuthService', () => {
       sign: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
 
-    authService = new AuthService(mockUserRepository, mockBcryptStrategy, mockJwtService);
+    authService = new AuthService(
+      mockUserRepository,
+      mockBcryptStrategy,
+      mockJwtService
+    );
   });
 
   describe('loginUser', () => {
@@ -70,23 +74,34 @@ describe('AuthService', () => {
 
       expect(result.token).toBe('mock-token');
       expect(result.user).toEqual(updatedUser);
-      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(
+        mockUser.id
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when passwordHash is null', async () => {
-      mockUserRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      mockUserRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        passwordHash: null,
+      });
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
       mockBcryptStrategy.verify.mockResolvedValue(false);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
   });
 });

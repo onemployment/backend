@@ -33,7 +33,9 @@ describe('PrismaUserRepository', () => {
   it('findByEmail lowercases the email and returns domain User', async () => {
     prisma.user.findUnique.mockResolvedValue(prismaUser);
     const result = await repository.findByEmail('TEST@EXAMPLE.COM');
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email: 'test@example.com' },
+    });
     expect(result?.email).toBe('test@example.com');
   });
 

@@ -2,7 +2,12 @@ import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../src/database/prisma.service';
-import { createTestApp, createTestUser, createTestJWT, TestAppSetup } from '../helpers/utils';
+import {
+  createTestApp,
+  createTestUser,
+  createTestJWT,
+  TestAppSetup,
+} from '../helpers/utils';
 
 describe('Local Authentication Integration Tests', () => {
   let testSetup: TestAppSetup;
@@ -90,7 +95,9 @@ describe('Local Authentication Integration Tests', () => {
         expect(updatedUser).toBeTruthy();
         expect(updatedUser!.lastLoginAt).not.toEqual(originalLoginTime);
         expect(updatedUser!.lastLoginAt).toBeInstanceOf(Date);
-        expect(updatedUser!.lastLoginAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
+        expect(updatedUser!.lastLoginAt!.getTime()).toBeGreaterThan(
+          Date.now() - 5000
+        );
       });
     });
 
@@ -281,7 +288,8 @@ describe('Local Authentication Integration Tests', () => {
 
       const expiryDate = new Date(payload.exp * 1000);
       const now = new Date();
-      const hoursUntilExpiry = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const hoursUntilExpiry =
+        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       expect(hoursUntilExpiry).toBeGreaterThan(7.9);
       expect(hoursUntilExpiry).toBeLessThan(8.1);

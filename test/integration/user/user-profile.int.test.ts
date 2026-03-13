@@ -105,7 +105,9 @@ describe('User Profile Management Integration Tests', () => {
 
     describe('authentication requirements', () => {
       it('should require authentication', async () => {
-        const response = await request(app.getHttpServer()).get('/api/v1/user/me').expect(401);
+        const response = await request(app.getHttpServer())
+          .get('/api/v1/user/me')
+          .expect(401);
 
         expect(response.body).toEqual({
           message: 'No token provided',
@@ -349,7 +351,9 @@ describe('User Profile Management Integration Tests', () => {
           .expect(400);
 
         // Email remains unchanged in database
-        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        const dbUser = await prismaService.user.findUnique({
+          where: { id: testUser.id },
+        });
         expect(dbUser!.email).toBe('original@example.com');
       });
 
@@ -367,7 +371,9 @@ describe('User Profile Management Integration Tests', () => {
           .expect(400);
 
         // Username remains unchanged in database
-        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        const dbUser = await prismaService.user.findUnique({
+          where: { id: testUser.id },
+        });
         expect(dbUser!.username).toBe('originaluser');
       });
 
@@ -383,7 +389,9 @@ describe('User Profile Management Integration Tests', () => {
           .expect(400);
 
         // Account creation method remains unchanged in database
-        const dbUser = await prismaService.user.findUnique({ where: { id: testUser.id } });
+        const dbUser = await prismaService.user.findUnique({
+          where: { id: testUser.id },
+        });
         expect(dbUser!.accountCreationMethod).toBe('local');
       });
     });

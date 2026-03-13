@@ -30,7 +30,8 @@ import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma
     AuthService,
     {
       provide: BcryptStrategy,
-      useFactory: (config: AppConfigService) => new BcryptStrategy(config.saltRounds),
+      useFactory: (config: AppConfigService) =>
+        new BcryptStrategy(config.saltRounds),
       inject: [AppConfigService],
     },
     JwtStrategy,

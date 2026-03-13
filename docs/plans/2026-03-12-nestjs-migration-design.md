@@ -45,15 +45,18 @@ src/routes/auth/
 ```
 
 **What gets cherry-picked:**
+
 - `auth.repository.ts` — copy logic as-is, add `@Injectable()`, inject `PrismaService` instead of `PrismaClient`
 - `auth.service.ts` — copy logic as-is, add `@Injectable()`, swap `JWTUtil.generateToken()` → `JwtService.sign()`
 - `bcrypt.strategy.ts` — copy from `src/api/auth/strategies/BcryptStrategy.ts`, add `@Injectable()`
 
 **What gets replaced:**
+
 - Zod `loginSchema` → `login.dto.ts` using class-validator (`@IsEmail()`, `@IsString()`, `@MinLength()`)
 - `jwt-auth.middleware` → `jwt.strategy.ts` (PassportJS JWT strategy) + `jwt-auth.guard.ts` (extends `AuthGuard('jwt')`)
 
 **JWT config** (same values as existing `JWTUtil`):
+
 - Secret: `JWT_SECRET` env var, fallback `development-secret-key`
 - `expiresIn: '8h'`
 - Issuer: `onemployment-auth`
@@ -66,6 +69,7 @@ src/routes/auth/
 **Error handling:** Services continue throwing custom errors (`UnauthorizedError` etc.). The existing global exception filter in `src/shared/filters/` handles mapping. If Passport-specific errors don't flow through the global filter cleanly, handle them locally — error handling is a future concern.
 
 **Routes:**
+
 - `POST /api/v1/auth/login` — public
 - `POST /api/v1/auth/logout` — protected (`@UseGuards(JwtAuthGuard)`)
 
@@ -90,18 +94,21 @@ src/routes/user/
 ```
 
 **What gets cherry-picked:**
+
 - `user.repository.ts` — copy logic as-is, add `@Injectable()`, inject `PrismaService`
 - `user.service.ts` — copy logic as-is, add `@Injectable()`, swap `JWTUtil.generateToken()` → `JwtService.sign()`
 - `username-suggestions.util.ts` — copy as-is, add `@Injectable()`
 - `validation.util.ts` — keep as static utility class, no injection needed
 
 **What gets replaced:**
+
 - Zod `userRegistrationSchema` → `register-user.dto.ts` using class-validator
 - Zod `userProfileUpdateSchema` → `update-user-profile.dto.ts` using class-validator
 
 **`UserModule`** imports `AuthModule` to access the exported `JwtAuthGuard` and `JwtModule`. No JWT config duplication.
 
 **Routes:**
+
 - `POST /api/v1/user` — public (register)
 - `GET /api/v1/user/me` — protected
 - `PUT /api/v1/user/me` — protected
@@ -128,12 +135,12 @@ src/types/express.d.ts      # req.user typing, replaced by Passport typings
 
 ### package.json changes
 
-| Script | Before | After |
-|--------|--------|-------|
-| `main` | `dist/index.js` | `dist/main.js` |
-| `build` | `tsc` | `nest build` |
-| `start` | `node dist/index.js` | `node dist/main.js` |
-| `dev` | nodemon + `src/index.ts` | `nest start --watch` |
+| Script  | Before                   | After                |
+| ------- | ------------------------ | -------------------- |
+| `main`  | `dist/index.js`          | `dist/main.js`       |
+| `build` | `tsc`                    | `nest build`         |
+| `start` | `node dist/index.js`     | `node dist/main.js`  |
+| `dev`   | nodemon + `src/index.ts` | `nest start --watch` |
 
 Remove the `nest:*` script aliases (they become redundant).
 
@@ -155,14 +162,14 @@ No changes needed — already uses `npm run build` and `npm start`.
 
 ## Route Summary
 
-| Method | Path | Auth | Module |
-|--------|------|------|--------|
-| `GET` | `/health` | public | health (already done) |
-| `POST` | `/api/v1/auth/login` | public | auth |
-| `POST` | `/api/v1/auth/logout` | JWT | auth |
-| `POST` | `/api/v1/user` | public | user |
-| `GET` | `/api/v1/user/me` | JWT | user |
-| `PUT` | `/api/v1/user/me` | JWT | user |
-| `GET` | `/api/v1/user/validate/username` | public | user |
-| `GET` | `/api/v1/user/validate/email` | public | user |
-| `GET` | `/api/v1/user/suggest-usernames` | public | user |
+| Method | Path                             | Auth   | Module                |
+| ------ | -------------------------------- | ------ | --------------------- |
+| `GET`  | `/health`                        | public | health (already done) |
+| `POST` | `/api/v1/auth/login`             | public | auth                  |
+| `POST` | `/api/v1/auth/logout`            | JWT    | auth                  |
+| `POST` | `/api/v1/user`                   | public | user                  |
+| `GET`  | `/api/v1/user/me`                | JWT    | user                  |
+| `PUT`  | `/api/v1/user/me`                | JWT    | user                  |
+| `GET`  | `/api/v1/user/validate/username` | public | user                  |
+| `GET`  | `/api/v1/user/validate/email`    | public | user                  |
+| `GET`  | `/api/v1/user/suggest-usernames` | public | user                  |

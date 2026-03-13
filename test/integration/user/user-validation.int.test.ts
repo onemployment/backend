@@ -530,9 +530,15 @@ describe('User Validation Integration Tests', () => {
 
       // Make multiple requests for suggestions
       const responses = await Promise.all([
-        request(app.getHttpServer()).get(`/api/v1/user/validate/username?username=${username}`),
-        request(app.getHttpServer()).get(`/api/v1/user/suggest-usernames?username=${username}`),
-        request(app.getHttpServer()).get(`/api/v1/user/validate/username?username=${username}`),
+        request(app.getHttpServer()).get(
+          `/api/v1/user/validate/username?username=${username}`
+        ),
+        request(app.getHttpServer()).get(
+          `/api/v1/user/suggest-usernames?username=${username}`
+        ),
+        request(app.getHttpServer()).get(
+          `/api/v1/user/validate/username?username=${username}`
+        ),
       ]);
 
       const suggestions1 = responses[0].body.suggestions;

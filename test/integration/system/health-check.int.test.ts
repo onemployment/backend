@@ -87,9 +87,7 @@ describe('System Health Check Integration Tests', () => {
 
   describe('System Endpoints Error Handling', () => {
     it('should return 404 for non-existent endpoints', async () => {
-      await request(app.getHttpServer())
-        .get('/api/v1/nonexistent')
-        .expect(404);
+      await request(app.getHttpServer()).get('/api/v1/nonexistent').expect(404);
       await request(app.getHttpServer())
         .get('/api/v1/health/detailed')
         .expect(404);
@@ -112,9 +110,7 @@ describe('System Health Check Integration Tests', () => {
     it('should maintain database connection during health checks', async () => {
       await request(app.getHttpServer()).get('/api/v1/health').expect(200);
 
-      await expect(
-        prismaService.$queryRaw`SELECT 1`
-      ).resolves.toBeDefined();
+      await expect(prismaService.$queryRaw`SELECT 1`).resolves.toBeDefined();
     });
 
     it('should handle health checks with active database operations', async () => {

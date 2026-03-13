@@ -1,14 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { IUserRepository } from '../../../domain/user/user.repository.port';
+import { Injectable, Inject } from '@nestjs/common';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../../domain/user/user.repository.port';
 
 let __lastFallbackTs = 0;
 let __fallbackCounter = 0;
 
 @Injectable()
 export class UsernameSuggestionsUtil {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository
+  ) {}
 
-  async generateSuggestions(baseUsername: string, count = 3): Promise<string[]> {
+  async generateSuggestions(
+    baseUsername: string,
+    count = 3
+  ): Promise<string[]> {
     const suggestions: string[] = [];
     let currentNumber = 2;
 
@@ -44,7 +52,9 @@ export class UsernameSuggestionsUtil {
             __lastFallbackTs = now;
             __fallbackCounter = 0;
           }
-          const suffix = __fallbackCounter ? `${now}${__fallbackCounter}` : `${now}`;
+          const suffix = __fallbackCounter
+            ? `${now}${__fallbackCounter}`
+            : `${now}`;
           return `${baseUsername}${suffix}`;
         })();
   }

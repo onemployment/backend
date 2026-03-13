@@ -18,7 +18,8 @@ export class RegisterUserDto {
   @MinLength(8)
   @MaxLength(100)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one lowercase letter, one uppercase letter, and one digit',
+    message:
+      'Password must contain at least one lowercase letter, one uppercase letter, and one digit',
   })
   password!: string;
 
@@ -26,7 +27,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(39)
   @Matches(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/, {
-    message: 'Username must be 1-39 characters, start and end with alphanumeric, and can contain hyphens',
+    message:
+      'Username must be 1-39 characters, start and end with alphanumeric, and can contain hyphens',
   })
   username!: string;
 
@@ -35,7 +37,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(100)
   @Matches(/^[a-zA-Z\s\-'.]+$/, {
-    message: "First name can only contain letters, spaces, hyphens, apostrophes, and dots",
+    message:
+      'First name can only contain letters, spaces, hyphens, apostrophes, and dots',
   })
   firstName!: string;
 
@@ -44,7 +47,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(100)
   @Matches(/^[a-zA-Z\s\-'.]+$/, {
-    message: "Last name can only contain letters, spaces, hyphens, apostrophes, and dots",
+    message:
+      'Last name can only contain letters, spaces, hyphens, apostrophes, and dots',
   })
   lastName!: string;
 }

@@ -1,7 +1,10 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import pino from 'pino';
 
-const pinoLogger = pino({ level: process.env.LOG_LEVEL || 'info', serializers: pino.stdSerializers });
+const pinoLogger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  serializers: pino.stdSerializers,
+});
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
@@ -13,7 +16,10 @@ export class LoggerService implements NestLoggerService {
     const metadata: Record<string, unknown> = {};
     if (context) metadata.context = context;
     if (trace) metadata.trace = trace;
-    pinoLogger.error(Object.keys(metadata).length > 0 ? metadata : undefined, message);
+    pinoLogger.error(
+      Object.keys(metadata).length > 0 ? metadata : undefined,
+      message
+    );
   }
 
   warn(message: string, context?: string) {

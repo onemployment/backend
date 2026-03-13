@@ -84,42 +84,42 @@ domain/         → anything          ❌ never
 
 ### Files to create
 
-| File | Purpose |
-|---|---|
-| `src/domain/user/user.entity.ts` | `User` interface in plain TypeScript |
-| `src/domain/user/user.repository.port.ts` | `IUserRepository` interface |
-| `src/infrastructure/persistence/prisma/mappers/user.mapper.ts` | Maps `PrismaUser` → domain `User` |
-| `src/infrastructure/persistence/prisma/user.repository.ts` | Merged Prisma implementation of `IUserRepository` |
+| File                                                           | Purpose                                           |
+| -------------------------------------------------------------- | ------------------------------------------------- |
+| `src/domain/user/user.entity.ts`                               | `User` interface in plain TypeScript              |
+| `src/domain/user/user.repository.port.ts`                      | `IUserRepository` interface                       |
+| `src/infrastructure/persistence/prisma/mappers/user.mapper.ts` | Maps `PrismaUser` → domain `User`                 |
+| `src/infrastructure/persistence/prisma/user.repository.ts`     | Merged Prisma implementation of `IUserRepository` |
 
 ### Files to move/update
 
-| File | Change |
-|---|---|
-| `src/routes/auth/auth.service.ts` → `src/modules/auth/auth.service.ts` | Inject `IUserRepository`, remove `@prisma/client` import |
-| `src/routes/auth/auth.controller.ts` → `src/modules/auth/auth.controller.ts` | Relocate, no logic change |
-| `src/routes/auth/auth.module.ts` → `src/modules/auth/auth.module.ts` | Update import paths |
-| `src/routes/auth/guards/` → `src/modules/auth/guards/` | Relocate |
-| `src/routes/auth/strategies/` → `src/modules/auth/strategies/` | Relocate |
-| `src/routes/auth/dto/` → `src/modules/auth/dto/` | Relocate |
-| `src/routes/user/user.service.ts` → `src/modules/user/user.service.ts` | Inject `IUserRepository`, remove `@prisma/client` import |
-| `src/routes/user/user.controller.ts` → `src/modules/user/user.controller.ts` | Relocate, no logic change |
-| `src/routes/user/user.module.ts` → `src/modules/user/user.module.ts` | Update import paths |
-| `src/routes/user/dto/` → `src/modules/user/dto/` | Relocate |
-| `src/routes/user/utils/` → `src/modules/user/utils/` | Relocate |
+| File                                                                         | Change                                                   |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `src/routes/auth/auth.service.ts` → `src/modules/auth/auth.service.ts`       | Inject `IUserRepository`, remove `@prisma/client` import |
+| `src/routes/auth/auth.controller.ts` → `src/modules/auth/auth.controller.ts` | Relocate, no logic change                                |
+| `src/routes/auth/auth.module.ts` → `src/modules/auth/auth.module.ts`         | Update import paths                                      |
+| `src/routes/auth/guards/` → `src/modules/auth/guards/`                       | Relocate                                                 |
+| `src/routes/auth/strategies/` → `src/modules/auth/strategies/`               | Relocate                                                 |
+| `src/routes/auth/dto/` → `src/modules/auth/dto/`                             | Relocate                                                 |
+| `src/routes/user/user.service.ts` → `src/modules/user/user.service.ts`       | Inject `IUserRepository`, remove `@prisma/client` import |
+| `src/routes/user/user.controller.ts` → `src/modules/user/user.controller.ts` | Relocate, no logic change                                |
+| `src/routes/user/user.module.ts` → `src/modules/user/user.module.ts`         | Update import paths                                      |
+| `src/routes/user/dto/` → `src/modules/user/dto/`                             | Relocate                                                 |
+| `src/routes/user/utils/` → `src/modules/user/utils/`                         | Relocate                                                 |
 
 ### Files to delete
 
-| File | Reason |
-|---|---|
-| `src/routes/auth/auth.repository.ts` | Merged into `infrastructure/persistence/prisma/user.repository.ts` |
-| `src/routes/user/user.repository.ts` | Merged into `infrastructure/persistence/prisma/user.repository.ts` |
-| `src/routes/auth/__tests__/auth.repository.test.ts` | Replaced by infrastructure-level test |
-| `src/routes/user/__tests__/user.repository.test.ts` | Replaced by infrastructure-level test |
+| File                                                | Reason                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------ |
+| `src/routes/auth/auth.repository.ts`                | Merged into `infrastructure/persistence/prisma/user.repository.ts` |
+| `src/routes/user/user.repository.ts`                | Merged into `infrastructure/persistence/prisma/user.repository.ts` |
+| `src/routes/auth/__tests__/auth.repository.test.ts` | Replaced by infrastructure-level test                              |
+| `src/routes/user/__tests__/user.repository.test.ts` | Replaced by infrastructure-level test                              |
 
 ### Tests to update
 
-| File | Change |
-|---|---|
+| File                                             | Change                                             |
+| ------------------------------------------------ | -------------------------------------------------- |
 | `src/routes/auth/__tests__/auth.service.test.ts` | Mock `IUserRepository` instead of `AuthRepository` |
 | `src/routes/user/__tests__/user.service.test.ts` | Mock `IUserRepository` instead of `UserRepository` |
 

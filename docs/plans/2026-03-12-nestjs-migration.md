@@ -15,6 +15,7 @@
 ### Task 1: Install required packages
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Install packages**
@@ -29,6 +30,7 @@ npm install --save-dev @types/passport-jwt
 ```bash
 npm ls @nestjs/passport @nestjs/jwt passport-jwt
 ```
+
 Expected: all four packages listed with versions.
 
 **Step 3: Commit**
@@ -45,6 +47,7 @@ git commit -m "chore: install nestjs passport and jwt packages"
 The global exception filter currently returns `{ statusCode, message, timestamp }`. Integration tests expect `{ message }`. Fix this before writing any module code.
 
 **Files:**
+
 - Modify: `src/shared/filters/global-exception.filter.ts`
 - Modify: `src/main.ts`
 
@@ -86,6 +89,7 @@ app.useGlobalPipes(
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0, `dist/` updated.
 
 **Step 4: Commit**
@@ -100,6 +104,7 @@ git commit -m "fix: normalize error response to {message} and set validation pip
 ### Task 3: Create LoginDto
 
 **Files:**
+
 - Create: `src/routes/auth/dto/login.dto.ts`
 
 **Step 1: Create the DTO**
@@ -124,6 +129,7 @@ export class LoginDto {
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 3: Commit**
@@ -140,6 +146,7 @@ git commit -m "feat: add LoginDto with class-validator"
 Cherry-pick from `src/api/auth/strategies/BcryptStrategy.ts` — only change is `@Injectable()` and injecting `AppConfigService` for salt rounds.
 
 **Files:**
+
 - Create: `src/routes/auth/strategies/bcrypt.strategy.ts`
 
 **Step 1: Write the failing unit test**
@@ -181,6 +188,7 @@ describe('BcryptStrategy', () => {
 ```bash
 npm run test:unit -- --testPathPattern="bcrypt.strategy.test"
 ```
+
 Expected: FAIL — `BcryptStrategy` not found.
 
 **Step 3: Create the strategy**
@@ -208,6 +216,7 @@ export class BcryptStrategy {
 ```bash
 npm run test:unit -- --testPathPattern="bcrypt.strategy.test"
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -224,6 +233,7 @@ git commit -m "feat: add BcryptStrategy as NestJS injectable"
 These replace `jwt-auth.middleware.ts`. The `JwtAuthGuard` customizes error messages to match the existing API behavior.
 
 **Files:**
+
 - Create: `src/routes/auth/strategies/jwt.strategy.ts`
 - Create: `src/routes/auth/guards/jwt-auth.guard.ts`
 
@@ -274,7 +284,11 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest<TUser>(err: Error | null, user: TUser, info: Error | null): TUser {
+  handleRequest<TUser>(
+    err: Error | null,
+    user: TUser,
+    info: Error | null
+  ): TUser {
     if (err) throw err;
 
     if (!user) {
@@ -297,6 +311,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 4: Commit**
@@ -313,6 +328,7 @@ git commit -m "feat: add JwtStrategy and JwtAuthGuard replacing jwt middleware"
 Cherry-pick from `src/api/auth/auth.repository.ts`. Only changes: `@Injectable()` decorator, inject `PrismaService`.
 
 **Files:**
+
 - Create: `src/routes/auth/__tests__/auth.repository.test.ts`
 - Create: `src/routes/auth/auth.repository.ts`
 
@@ -365,6 +381,7 @@ describe('AuthRepository', () => {
 ```bash
 npm run test:unit -- --testPathPattern="auth.repository.test"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create AuthRepository**
@@ -410,6 +427,7 @@ export class AuthRepository {
 ```bash
 npm run test:unit -- --testPathPattern="auth.repository.test"
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -426,6 +444,7 @@ git commit -m "feat: add NestJS AuthRepository"
 Cherry-pick from `src/api/auth/auth.service.ts`. Key change: inject `JwtService` instead of `JWTUtil`, throw NestJS `UnauthorizedException`.
 
 **Files:**
+
 - Create: `src/routes/auth/__tests__/auth.service.test.ts`
 - Create: `src/routes/auth/auth.service.ts`
 
@@ -481,7 +500,11 @@ describe('AuthService', () => {
       sign: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
 
-    authService = new AuthService(mockAuthRepository, mockBcryptStrategy, mockJwtService);
+    authService = new AuthService(
+      mockAuthRepository,
+      mockBcryptStrategy,
+      mockJwtService
+    );
   });
 
   describe('loginUser', () => {
@@ -498,23 +521,34 @@ describe('AuthService', () => {
 
       expect(result.token).toBe('mock-token');
       expect(result.user).toEqual(updatedUser);
-      expect(mockAuthRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+      expect(mockAuthRepository.updateLastLogin).toHaveBeenCalledWith(
+        mockUser.id
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       mockAuthRepository.findByEmail.mockResolvedValue(null);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when passwordHash is null', async () => {
-      mockAuthRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      mockAuthRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        passwordHash: null,
+      });
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
       mockAuthRepository.findByEmail.mockResolvedValue(mockUser);
       mockBcryptStrategy.verify.mockResolvedValue(false);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
   });
 });
@@ -525,6 +559,7 @@ describe('AuthService', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/auth/__tests__/auth.service"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create AuthService**
@@ -543,10 +578,12 @@ export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly bcryptStrategy: BcryptStrategy,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {}
 
-  async loginUser(credentials: LoginDto): Promise<{ user: User; token: string }> {
+  async loginUser(
+    credentials: LoginDto
+  ): Promise<{ user: User; token: string }> {
     const user = await this.authRepository.findByEmail(credentials.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -556,7 +593,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isValid = await this.bcryptStrategy.verify(credentials.password, user.passwordHash);
+    const isValid = await this.bcryptStrategy.verify(
+      credentials.password,
+      user.passwordHash
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -579,6 +619,7 @@ export class AuthService {
 ```bash
 npm run test:unit -- --testPathPattern="routes/auth/__tests__/auth.service"
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -593,6 +634,7 @@ git commit -m "feat: add NestJS AuthService"
 ### Task 8: Create AuthController and AuthModule
 
 **Files:**
+
 - Create: `src/routes/auth/__tests__/auth.controller.test.ts`
 - Create: `src/routes/auth/auth.controller.ts`
 - Create: `src/routes/auth/auth.module.ts`
@@ -643,9 +685,15 @@ describe('AuthController', () => {
   });
 
   it('should return login response with token and user', async () => {
-    mockAuthService.loginUser.mockResolvedValue({ user: mockUser, token: 'jwt-token' });
+    mockAuthService.loginUser.mockResolvedValue({
+      user: mockUser,
+      token: 'jwt-token',
+    });
 
-    const result = await controller.login({ email: 'test@example.com', password: 'pass' });
+    const result = await controller.login({
+      email: 'test@example.com',
+      password: 'pass',
+    });
 
     expect(result.message).toBe('Login successful');
     expect(result.token).toBe('jwt-token');
@@ -665,6 +713,7 @@ describe('AuthController', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/auth/__tests__/auth.controller"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create AuthController**
@@ -748,7 +797,13 @@ import { DatabaseModule } from '../../database/database.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, BcryptStrategy, JwtStrategy, JwtAuthGuard],
+  providers: [
+    AuthService,
+    AuthRepository,
+    BcryptStrategy,
+    JwtStrategy,
+    JwtAuthGuard,
+  ],
   exports: [JwtAuthGuard, JwtModule, BcryptStrategy],
 })
 export class AuthModule {}
@@ -768,7 +823,7 @@ import { AuthModule } from './routes/auth/auth.module';
     DatabaseModule,
     SharedModule,
     HealthModule,
-    AuthModule,   // ADD THIS
+    AuthModule, // ADD THIS
   ],
 })
 export class AppModule {}
@@ -779,6 +834,7 @@ export class AppModule {}
 ```bash
 npm run test:unit -- --testPathPattern="routes/auth/__tests__/auth.controller"
 ```
+
 Expected: PASS.
 
 **Step 7: Build to verify no errors**
@@ -786,6 +842,7 @@ Expected: PASS.
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 8: Commit**
@@ -802,6 +859,7 @@ git commit -m "feat: add NestJS AuthModule with controller, service, repository"
 The integration test helpers must be rewritten to boot a NestJS app. The `setup.ts` needs to set `process.env.POSTGRES_DB_URL` so the NestJS `PrismaService` uses the test container.
 
 **Files:**
+
 - Modify: `test/integration/helpers/setup.ts`
 - Modify: `test/integration/helpers/utils.ts`
 - Modify: `test/integration/auth/local-authentication.int.test.ts`
@@ -813,14 +871,18 @@ Add `process.env.POSTGRES_DB_URL = databaseUrl;` after getting the container URI
 ```typescript
 // In setup.ts, after line 30 (getConnectionUri):
 const databaseUrl = globalWithPostgres.postgresContainer.getConnectionUri();
-process.env.POSTGRES_DB_URL = databaseUrl;  // ADD THIS LINE
+process.env.POSTGRES_DB_URL = databaseUrl; // ADD THIS LINE
 logger.info(`PostgreSQL container started at: ${databaseUrl}`);
 ```
 
 **Step 2: Rewrite `test/integration/helpers/utils.ts`**
 
 ```typescript
-import { INestApplication, ValidationPipe, BadRequestException } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module';
 import { GlobalExceptionFilter } from '../../../src/shared/filters/global-exception.filter';
@@ -902,7 +964,11 @@ export const createTestUser = async (
 };
 
 export const createTestJWT = (jwtService: JwtService, user: User): string => {
-  return jwtService.sign({ sub: user.id, email: user.email, username: user.username });
+  return jwtService.sign({
+    sub: user.id,
+    email: user.email,
+    username: user.username,
+  });
 };
 ```
 
@@ -958,6 +1024,7 @@ describe('Local Authentication Integration Tests', () => {
 ```bash
 npm run test:int -- --testPathPattern="local-authentication"
 ```
+
 Expected: all tests PASS.
 
 **Step 5: Commit**
@@ -974,6 +1041,7 @@ git commit -m "test: update integration test helpers to use NestJS app"
 ### Task 10: Create user DTOs
 
 **Files:**
+
 - Create: `src/routes/user/dto/register-user.dto.ts`
 - Create: `src/routes/user/dto/update-user-profile.dto.ts`
 
@@ -1003,7 +1071,8 @@ export class RegisterUserDto {
   @MinLength(8)
   @MaxLength(100)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one lowercase letter, one uppercase letter, and one digit',
+    message:
+      'Password must contain at least one lowercase letter, one uppercase letter, and one digit',
   })
   password: string;
 
@@ -1011,7 +1080,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(39)
   @Matches(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/, {
-    message: 'Username must be 1-39 characters, start and end with alphanumeric, and can contain hyphens',
+    message:
+      'Username must be 1-39 characters, start and end with alphanumeric, and can contain hyphens',
   })
   username: string;
 
@@ -1020,7 +1090,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(100)
   @Matches(/^[a-zA-Z\s\-'.]+$/, {
-    message: "First name can only contain letters, spaces, hyphens, apostrophes, and dots",
+    message:
+      'First name can only contain letters, spaces, hyphens, apostrophes, and dots',
   })
   firstName: string;
 
@@ -1029,7 +1100,8 @@ export class RegisterUserDto {
   @MinLength(1)
   @MaxLength(100)
   @Matches(/^[a-zA-Z\s\-'.]+$/, {
-    message: "Last name can only contain letters, spaces, hyphens, apostrophes, and dots",
+    message:
+      'Last name can only contain letters, spaces, hyphens, apostrophes, and dots',
   })
   lastName: string;
 }
@@ -1039,7 +1111,13 @@ export class RegisterUserDto {
 
 ```typescript
 // src/routes/user/dto/update-user-profile.dto.ts
-import { IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
+import {
+  IsString,
+  MinLength,
+  MaxLength,
+  Matches,
+  IsOptional,
+} from 'class-validator';
 
 export class UpdateUserProfileDto {
   @IsOptional()
@@ -1069,6 +1147,7 @@ export class UpdateUserProfileDto {
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 4: Commit**
@@ -1085,6 +1164,7 @@ git commit -m "feat: add user DTOs with class-validator"
 Cherry-pick from `src/api/user/user.repository.ts`.
 
 **Files:**
+
 - Create: `src/routes/user/__tests__/user.repository.test.ts`
 - Create: `src/routes/user/user.repository.ts`
 
@@ -1132,6 +1212,7 @@ describe('UserRepository', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.repository"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create UserRepository**
@@ -1180,7 +1261,9 @@ export class UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    return this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -1223,6 +1306,7 @@ export class UserRepository {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.repository"
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -1239,6 +1323,7 @@ git commit -m "feat: add NestJS UserRepository"
 Cherry-pick from `src/api/user/utils/username-suggestions.util.ts`. Add `@Injectable()`, inject `UserRepository`.
 
 **Files:**
+
 - Create: `src/routes/user/utils/username-suggestions.util.ts`
 
 **Step 1: Write the failing unit test**
@@ -1283,6 +1368,7 @@ describe('UsernameSuggestionsUtil', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/utils/__tests__/username-suggestions"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create UsernameSuggestionsUtil**
@@ -1299,7 +1385,10 @@ let __fallbackCounter = 0;
 export class UsernameSuggestionsUtil {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async generateSuggestions(baseUsername: string, count = 3): Promise<string[]> {
+  async generateSuggestions(
+    baseUsername: string,
+    count = 3
+  ): Promise<string[]> {
     const suggestions: string[] = [];
     let currentNumber = 2;
 
@@ -1335,7 +1424,9 @@ export class UsernameSuggestionsUtil {
             __lastFallbackTs = now;
             __fallbackCounter = 0;
           }
-          const suffix = __fallbackCounter ? `${now}${__fallbackCounter}` : `${now}`;
+          const suffix = __fallbackCounter
+            ? `${now}${__fallbackCounter}`
+            : `${now}`;
           return `${baseUsername}${suffix}`;
         })();
   }
@@ -1347,6 +1438,7 @@ export class UsernameSuggestionsUtil {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/utils/__tests__/username-suggestions"
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -1363,6 +1455,7 @@ git commit -m "feat: add UsernameSuggestionsUtil as NestJS injectable"
 Cherry-pick from `src/api/user/user.service.ts`. Throw NestJS exceptions, inject `JwtService`, `BcryptStrategy`, `UsernameSuggestionsUtil`, `UserRepository`.
 
 **Files:**
+
 - Create: `src/routes/user/__tests__/user.service.test.ts`
 - Create: `src/routes/user/user.service.ts`
 - Copy: `src/api/user/utils/validation.util.ts` → `src/routes/user/utils/validation.util.ts`
@@ -1384,7 +1477,11 @@ import { UserRepository } from '../user.repository';
 import { BcryptStrategy } from '../../auth/strategies/bcrypt.strategy';
 import { JwtService } from '@nestjs/jwt';
 import { UsernameSuggestionsUtil } from '../utils/username-suggestions.util';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { User } from '@prisma/client';
 
 const mockUser: User = {
@@ -1424,7 +1521,10 @@ describe('UserService', () => {
       findUsersByUsernamePrefix: jest.fn(),
     } as unknown as jest.Mocked<UserRepository>;
 
-    mockBcryptStrategy = { hash: jest.fn(), verify: jest.fn() } as unknown as jest.Mocked<BcryptStrategy>;
+    mockBcryptStrategy = {
+      hash: jest.fn(),
+      verify: jest.fn(),
+    } as unknown as jest.Mocked<BcryptStrategy>;
     mockJwtService = { sign: jest.fn() } as unknown as jest.Mocked<JwtService>;
     mockSuggestionsUtil = {
       generateSuggestions: jest.fn(),
@@ -1462,13 +1562,17 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
   });
 
@@ -1481,7 +1585,9 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });
@@ -1492,6 +1598,7 @@ describe('UserService', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.service"
 ```
+
 Expected: FAIL.
 
 **Step 4: Create UserService**
@@ -1519,16 +1626,20 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly bcryptStrategy: BcryptStrategy,
     private readonly jwtService: JwtService,
-    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil,
+    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}
 
-  async registerUser(data: RegisterUserDto): Promise<{ user: User; token: string }> {
+  async registerUser(
+    data: RegisterUserDto
+  ): Promise<{ user: User; token: string }> {
     if (ValidationUtil.isReservedUsername(data.username)) {
       throw new BadRequestException('Username is reserved and cannot be used');
     }
 
     if (await this.userRepository.isEmailTaken(data.email)) {
-      throw new ConflictException('Email already registered. Please sign in instead');
+      throw new ConflictException(
+        'Email already registered. Please sign in instead'
+      );
     }
 
     if (await this.userRepository.isUsernameTaken(data.username)) {
@@ -1563,13 +1674,18 @@ export class UserService {
     return user;
   }
 
-  async updateUserProfile(userId: string, updates: UpdateUserProfileDto): Promise<User> {
+  async updateUserProfile(
+    userId: string,
+    updates: UpdateUserProfileDto
+  ): Promise<User> {
     const existing = await this.userRepository.findById(userId);
     if (!existing) throw new NotFoundException('User not found');
 
     const sanitized: UpdateUserProfileDto = {};
-    if (updates.firstName !== undefined) sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
-    if (updates.lastName !== undefined) sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
+    if (updates.firstName !== undefined)
+      sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
+    if (updates.lastName !== undefined)
+      sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
     if (updates.displayName !== undefined) {
       sanitized.displayName = updates.displayName
         ? ValidationUtil.sanitizeName(updates.displayName)
@@ -1579,19 +1695,27 @@ export class UserService {
     return this.userRepository.updateProfile(userId, sanitized);
   }
 
-  async validateUsername(username: string): Promise<{ available: boolean; suggestions?: string[] }> {
-    if (!ValidationUtil.validateUsername(username) || ValidationUtil.isReservedUsername(username)) {
+  async validateUsername(
+    username: string
+  ): Promise<{ available: boolean; suggestions?: string[] }> {
+    if (
+      !ValidationUtil.validateUsername(username) ||
+      ValidationUtil.isReservedUsername(username)
+    ) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
-    const available = await this.usernameSuggestionsUtil.isUsernameAvailable(username);
+    const available =
+      await this.usernameSuggestionsUtil.isUsernameAvailable(username);
     if (!available) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
@@ -1616,6 +1740,7 @@ export class UserService {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.service"
 ```
+
 Expected: PASS.
 
 **Step 6: Commit**
@@ -1630,6 +1755,7 @@ git commit -m "feat: add NestJS UserService"
 ### Task 14: Create UserController and UserModule
 
 **Files:**
+
 - Create: `src/routes/user/__tests__/user.controller.test.ts`
 - Create: `src/routes/user/user.controller.ts`
 - Create: `src/routes/user/user.module.ts`
@@ -1689,7 +1815,10 @@ describe('UserController', () => {
   });
 
   it('should register user and return 201 with token', async () => {
-    mockUserService.registerUser.mockResolvedValue({ user: mockUser, token: 'token' });
+    mockUserService.registerUser.mockResolvedValue({
+      user: mockUser,
+      token: 'token',
+    });
     const result = await controller.register({
       email: 'test@example.com',
       password: 'Password123',
@@ -1715,6 +1844,7 @@ describe('UserController', () => {
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.controller"
 ```
+
 Expected: FAIL.
 
 **Step 3: Create UserController**
@@ -1763,9 +1893,15 @@ export class UserController {
 
   @Put('me')
   @UseGuards(JwtAuthGuard)
-  async updateMe(@Request() req: { user: JwtPayload }, @Body() dto: UpdateUserProfileDto) {
+  async updateMe(
+    @Request() req: { user: JwtPayload },
+    @Body() dto: UpdateUserProfileDto
+  ) {
     const user = await this.userService.updateUserProfile(req.user.sub, dto);
-    return { message: 'Profile updated successfully', user: this.transformUser(user) };
+    return {
+      message: 'Profile updated successfully',
+      user: this.transformUser(user),
+    };
   }
 
   @Get('validate/username')
@@ -1773,7 +1909,8 @@ export class UserController {
     if (!username) {
       return { available: false, message: 'Username parameter is required' };
     }
-    const { available, suggestions } = await this.userService.validateUsername(username);
+    const { available, suggestions } =
+      await this.userService.validateUsername(username);
     return {
       available,
       message: available ? 'Username is available' : 'Username is taken',
@@ -1855,7 +1992,7 @@ import { UserModule } from './routes/user/user.module';
     SharedModule,
     HealthModule,
     AuthModule,
-    UserModule,  // ADD THIS
+    UserModule, // ADD THIS
   ],
 })
 export class AppModule {}
@@ -1866,6 +2003,7 @@ export class AppModule {}
 ```bash
 npm run test:unit -- --testPathPattern="routes/user/__tests__/user.controller"
 ```
+
 Expected: PASS.
 
 **Step 7: Build to verify**
@@ -1873,6 +2011,7 @@ Expected: PASS.
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 8: Commit**
@@ -1887,12 +2026,14 @@ git commit -m "feat: add NestJS UserModule with controller, service, repository"
 ### Task 15: Update user integration tests
 
 **Files:**
+
 - Modify: `test/integration/user/user-registration.int.test.ts`
 - Modify: `test/integration/user/user-profile.int.test.ts`
 - Modify: `test/integration/user/user-validation.int.test.ts`
 - Modify: `test/integration/user/user-scenarios.int.test.ts`
 
 Apply the same migration pattern from Task 9 to each user integration test file:
+
 - Replace `let app: Application` with `let app: INestApplication`
 - Replace `beforeEach(() => { testSetup = createTestApp(prismaClient) })` with `beforeAll(async () => { testSetup = await createTestApp() })`
 - Add `afterAll(async () => { await app.close() })`
@@ -1906,6 +2047,7 @@ Apply the same migration pattern from Task 9 to each user integration test file:
 ```bash
 npm run test:int -- --testPathPattern="user"
 ```
+
 Expected: all tests PASS.
 
 **Run all integration tests:**
@@ -1913,6 +2055,7 @@ Expected: all tests PASS.
 ```bash
 npm run test:int
 ```
+
 Expected: all tests PASS.
 
 **Commit:**
@@ -1931,6 +2074,7 @@ git commit -m "test: update user integration tests to use NestJS app"
 `src/shared/logger/logger.service.ts` currently imports from `src/common/logger/logger.ts` (which depends on `src/config`). Both will be deleted. Move the pino setup inline.
 
 **Files:**
+
 - Modify: `src/shared/logger/logger.service.ts`
 
 **Step 1: Update LoggerService to inline pino**
@@ -1991,6 +2135,7 @@ const logger = { info: console.log, error: console.error };
 ```bash
 npm run nest:build && npm run test:unit && npm run test:int
 ```
+
 Expected: all pass.
 
 **Step 4: Commit**
@@ -2005,6 +2150,7 @@ git commit -m "refactor: move pino logger inline in LoggerService, remove src/co
 ### Task 17: Delete Express files
 
 **Files to delete:**
+
 ```
 src/index.ts
 src/server.ts
@@ -2028,6 +2174,7 @@ rm -rf src/api/ src/middleware/ src/common/ src/config/
 ```bash
 npm run nest:build
 ```
+
 Expected: exits 0.
 
 **Step 3: Run all unit tests**
@@ -2035,6 +2182,7 @@ Expected: exits 0.
 ```bash
 npm run test:unit
 ```
+
 Expected: all pass. (Old Express unit tests in `src/api/` are gone; only NestJS tests in `src/routes/` remain.)
 
 **Step 4: Commit**
@@ -2049,6 +2197,7 @@ git commit -m "chore: delete Express app code (server, api, middleware, common, 
 ### Task 18: Update scripts, docker-compose, and jest config
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `docker-compose.yml`
 - Modify: `jest.config.js`
@@ -2102,6 +2251,7 @@ Also verify the `unit` project `roots` still points to `['<rootDir>/src']` — n
 ```bash
 npm run lint && npm run build && npm run test:unit && npm run test:int
 ```
+
 Expected: all pass.
 
 **Step 5: Commit**

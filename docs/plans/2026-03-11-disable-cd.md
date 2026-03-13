@@ -13,6 +13,7 @@
 ### Task 1: Disable CD in backend
 
 **Files:**
+
 - Modify: `backend/.github/workflows/cicd.yml:43`
 
 **Step 1: Add `if: false` to the `cd` job**
@@ -20,11 +21,11 @@
 In `.github/workflows/cicd.yml`, find the `cd:` job definition and add `if: false` immediately below it:
 
 ```yaml
-  cd:
-    name: Continuous Deployment
-    runs-on: ubuntu-latest
-    needs: ci
-    if: false
+cd:
+  name: Continuous Deployment
+  runs-on: ubuntu-latest
+  needs: ci
+  if: false
 ```
 
 **Step 2: Commit and push to main**
@@ -43,6 +44,7 @@ Expected: push succeeds, GitHub Actions shows CI running and CD skipped.
 ### Task 2: Disable CD in frontend
 
 **Files:**
+
 - Modify: `frontend/.github/workflows/cicd.yml:46`
 
 **Step 1: Add `if: false` to the `cd` job**
@@ -50,11 +52,11 @@ Expected: push succeeds, GitHub Actions shows CI running and CD skipped.
 In `.github/workflows/cicd.yml`, find the `cd:` job definition and add `if: false` immediately below it:
 
 ```yaml
-  cd:
-    name: Continuous Deployment
-    runs-on: ubuntu-latest
-    needs: ci
-    if: false
+cd:
+  name: Continuous Deployment
+  runs-on: ubuntu-latest
+  needs: ci
+  if: false
 ```
 
 **Step 2: Commit and push to main**

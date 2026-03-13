@@ -41,9 +41,15 @@ export class UserController {
 
   @Put('me')
   @UseGuards(JwtAuthGuard)
-  async updateMe(@Request() req: { user: JwtPayload }, @Body() dto: UpdateUserProfileDto) {
+  async updateMe(
+    @Request() req: { user: JwtPayload },
+    @Body() dto: UpdateUserProfileDto
+  ) {
     const user = await this.userService.updateUserProfile(req.user.sub, dto);
-    return { message: 'Profile updated successfully', user: this.transformUser(user) };
+    return {
+      message: 'Profile updated successfully',
+      user: this.transformUser(user),
+    };
   }
 
   @Get('validate/username')
@@ -51,7 +57,8 @@ export class UserController {
     if (!username) {
       throw new BadRequestException('Username parameter is required');
     }
-    const { available, suggestions } = await this.userService.validateUsername(username);
+    const { available, suggestions } =
+      await this.userService.validateUsername(username);
     return {
       available,
       message: available ? 'Username is available' : 'Username is taken',

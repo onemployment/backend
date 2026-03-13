@@ -13,6 +13,7 @@
 ### Task 1: Create domain entity and repository port
 
 **Files:**
+
 - Create: `src/domain/user/user.entity.ts`
 - Create: `src/domain/user/user.repository.port.ts`
 
@@ -85,6 +86,7 @@ export interface IUserRepository {
 ```bash
 npm run build
 ```
+
 Expected: no errors.
 
 **Step 4: Commit**
@@ -99,6 +101,7 @@ git commit -m "feat: add User domain entity and IUserRepository port"
 ### Task 2: Create user mapper
 
 **Files:**
+
 - Create: `src/infrastructure/persistence/prisma/mappers/user.mapper.ts`
 - Create: `src/infrastructure/persistence/prisma/mappers/__tests__/user.mapper.test.ts`
 
@@ -172,6 +175,7 @@ describe('UserMapper', () => {
 ```bash
 npm run test:unit -- --testPathPattern="user.mapper.test"
 ```
+
 Expected: FAIL — `Cannot find module '../user.mapper'`
 
 **Step 3: Implement the mapper**
@@ -209,6 +213,7 @@ export class UserMapper {
 ```bash
 npm run test:unit -- --testPathPattern="user.mapper.test"
 ```
+
 Expected: PASS — 2 tests passing.
 
 **Step 5: Commit**
@@ -223,6 +228,7 @@ git commit -m "feat: add UserMapper to translate Prisma User to domain User"
 ### Task 3: Create PrismaUserRepository
 
 **Files:**
+
 - Create: `src/infrastructure/persistence/prisma/user.repository.ts`
 - Create: `src/infrastructure/persistence/prisma/__tests__/user.repository.test.ts`
 
@@ -267,7 +273,9 @@ describe('PrismaUserRepository', () => {
   it('findByEmail lowercases the email and returns domain User', async () => {
     prisma.user.findUnique.mockResolvedValue(prismaUser);
     const result = await repository.findByEmail('TEST@EXAMPLE.COM');
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email: 'test@example.com' },
+    });
     expect(result?.email).toBe('test@example.com');
   });
 
@@ -317,6 +325,7 @@ describe('PrismaUserRepository', () => {
 ```bash
 npm run test:unit -- --testPathPattern="infrastructure/persistence/prisma/__tests__/user.repository"
 ```
+
 Expected: FAIL — `Cannot find module '../user.repository'`
 
 **Step 3: Implement `PrismaUserRepository`**
@@ -377,7 +386,10 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async updateProfile(id: string, updates: ProfileUpdateData): Promise<User> {
-    const user = await this.prisma.user.update({ where: { id }, data: updates });
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: updates,
+    });
     return UserMapper.toDomain(user);
   }
 
@@ -428,6 +440,7 @@ export class PrismaUserRepository implements IUserRepository {
 ```bash
 npm run test:unit -- --testPathPattern="infrastructure/persistence/prisma/__tests__/user.repository"
 ```
+
 Expected: PASS — 7 tests passing.
 
 **Step 5: Commit**
@@ -442,6 +455,7 @@ git commit -m "feat: add PrismaUserRepository implementing IUserRepository"
 ### Task 4: Create PersistenceModule
 
 **Files:**
+
 - Create: `src/infrastructure/persistence/prisma/prisma-persistence.module.ts`
 
 This NestJS module binds `PrismaUserRepository` to the `USER_REPOSITORY` DI token and exports it so feature modules can inject the repository without knowing the concrete class.
@@ -473,6 +487,7 @@ export class PrismaPersistenceModule {}
 ```bash
 npm run build
 ```
+
 Expected: no errors.
 
 **Step 3: Commit**
@@ -487,6 +502,7 @@ git commit -m "feat: add PrismaPersistenceModule binding repository to DI token"
 ### Task 5: Relocate auth module and update AuthService
 
 **Files:**
+
 - Create: `src/modules/auth/` (new location for all auth files)
 - Delete: `src/routes/auth/` (after migration complete)
 
@@ -510,7 +526,10 @@ cp src/routes/auth/strategies/jwt.strategy.ts src/modules/auth/strategies/jwt.st
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../../domain/user/user.entity';
-import { IUserRepository, USER_REPOSITORY } from '../../domain/user/user.repository.port';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../domain/user/user.repository.port';
 import { BcryptStrategy } from './strategies/bcrypt.strategy';
 import { LoginDto } from './dto/login.dto';
 
@@ -519,10 +538,12 @@ export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     private readonly bcryptStrategy: BcryptStrategy,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {}
 
-  async loginUser(credentials: LoginDto): Promise<{ user: User; token: string }> {
+  async loginUser(
+    credentials: LoginDto
+  ): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(credentials.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -532,7 +553,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isValid = await this.bcryptStrategy.verify(credentials.password, user.passwordHash);
+    const isValid = await this.bcryptStrategy.verify(
+      credentials.password,
+      user.passwordHash
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -586,7 +610,8 @@ import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma
     AuthService,
     {
       provide: BcryptStrategy,
-      useFactory: (config: AppConfigService) => new BcryptStrategy(config.saltRounds),
+      useFactory: (config: AppConfigService) =>
+        new BcryptStrategy(config.saltRounds),
       inject: [AppConfigService],
     },
     JwtStrategy,
@@ -600,6 +625,7 @@ export class AuthModule {}
 **Step 4: Fix import paths in copied files**
 
 Update `src/modules/auth/auth.controller.ts` — change:
+
 ```typescript
 // old
 import { AuthService } from './auth.service';
@@ -608,6 +634,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard'; // correct
 ```
 
 Update `src/modules/auth/strategies/jwt.strategy.ts` — fix any path to shared/config:
+
 ```typescript
 // old path (from routes/auth/strategies/)
 import { AppConfigService } from '../../../shared/config/app-config.service';
@@ -621,6 +648,7 @@ import { AppConfigService } from '../../../shared/config/app-config.service';
 ```bash
 npm run build
 ```
+
 Expected: no errors from the new modules/auth/ files.
 
 **Step 6: Commit**
@@ -635,6 +663,7 @@ git commit -m "feat: relocate auth module and update AuthService to inject IUser
 ### Task 6: Relocate user module and update UserService
 
 **Files:**
+
 - Create: `src/modules/user/` (new location)
 - Delete: `src/routes/user/` (after migration complete)
 
@@ -679,16 +708,20 @@ export class UserService {
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     private readonly bcryptStrategy: BcryptStrategy,
     private readonly jwtService: JwtService,
-    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil,
+    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}
 
-  async registerUser(data: RegisterUserDto): Promise<{ user: User; token: string }> {
+  async registerUser(
+    data: RegisterUserDto
+  ): Promise<{ user: User; token: string }> {
     if (ValidationUtil.isReservedUsername(data.username)) {
       throw new BadRequestException('Username is reserved and cannot be used');
     }
 
     if (await this.userRepository.isEmailTaken(data.email)) {
-      throw new ConflictException('Email already registered. Please sign in instead');
+      throw new ConflictException(
+        'Email already registered. Please sign in instead'
+      );
     }
 
     if (await this.userRepository.isUsernameTaken(data.username)) {
@@ -723,13 +756,18 @@ export class UserService {
     return user;
   }
 
-  async updateUserProfile(userId: string, updates: UpdateUserProfileDto): Promise<User> {
+  async updateUserProfile(
+    userId: string,
+    updates: UpdateUserProfileDto
+  ): Promise<User> {
     const existing = await this.userRepository.findById(userId);
     if (!existing) throw new NotFoundException('User not found');
 
     const sanitized: UpdateUserProfileDto = {};
-    if (updates.firstName !== undefined) sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
-    if (updates.lastName !== undefined) sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
+    if (updates.firstName !== undefined)
+      sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
+    if (updates.lastName !== undefined)
+      sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
     if (updates.displayName !== undefined) {
       sanitized.displayName = updates.displayName
         ? ValidationUtil.sanitizeName(updates.displayName)
@@ -739,19 +777,27 @@ export class UserService {
     return this.userRepository.updateProfile(userId, sanitized);
   }
 
-  async validateUsername(username: string): Promise<{ available: boolean; suggestions?: string[] }> {
-    if (!ValidationUtil.validateUsername(username) || ValidationUtil.isReservedUsername(username)) {
+  async validateUsername(
+    username: string
+  ): Promise<{ available: boolean; suggestions?: string[] }> {
+    if (
+      !ValidationUtil.validateUsername(username) ||
+      ValidationUtil.isReservedUsername(username)
+    ) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
-    const available = await this.usernameSuggestionsUtil.isUsernameAvailable(username);
+    const available =
+      await this.usernameSuggestionsUtil.isUsernameAvailable(username);
     if (!available) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
@@ -808,6 +854,7 @@ Update the constructor to use `IUserRepository` type. If the util is provided di
 ```bash
 npm run build
 ```
+
 Expected: no errors.
 
 **Step 6: Commit**
@@ -822,6 +869,7 @@ git commit -m "feat: relocate user module and update UserService to inject IUser
 ### Task 7: Update app.module.ts
 
 **Files:**
+
 - Modify: `src/app.module.ts`
 
 **Step 1: Update imports**
@@ -859,6 +907,7 @@ export class AppModule {}
 ```bash
 npm run build
 ```
+
 Expected: no errors.
 
 **Step 3: Commit**
@@ -873,6 +922,7 @@ git commit -m "chore: update app.module.ts to import from modules/ instead of ro
 ### Task 8: Update auth service test
 
 **Files:**
+
 - Create: `src/modules/auth/__tests__/auth.service.test.ts`
 
 Replace the mock of `AuthRepository` with a mock of `IUserRepository`. The test logic stays identical — only imports and mock construction change.
@@ -936,7 +986,11 @@ describe('AuthService', () => {
       sign: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
 
-    authService = new AuthService(mockUserRepository, mockBcryptStrategy, mockJwtService);
+    authService = new AuthService(
+      mockUserRepository,
+      mockBcryptStrategy,
+      mockJwtService
+    );
   });
 
   describe('loginUser', () => {
@@ -953,23 +1007,34 @@ describe('AuthService', () => {
 
       expect(result.token).toBe('mock-token');
       expect(result.user).toEqual(updatedUser);
-      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(
+        mockUser.id
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when passwordHash is null', async () => {
-      mockUserRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      mockUserRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        passwordHash: null,
+      });
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
       mockBcryptStrategy.verify.mockResolvedValue(false);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
   });
 });
@@ -980,6 +1045,7 @@ describe('AuthService', () => {
 ```bash
 npm run test:unit -- --testPathPattern="modules/auth/__tests__/auth.service"
 ```
+
 Expected: PASS — 4 tests passing.
 
 **Step 3: Commit**
@@ -994,6 +1060,7 @@ git commit -m "test: update auth service test to use IUserRepository mock"
 ### Task 9: Update user service test
 
 **Files:**
+
 - Create: `src/modules/user/__tests__/user.service.test.ts`
 
 **Step 1: Write the updated test**
@@ -1048,7 +1115,10 @@ describe('UserService', () => {
       findUsersByUsernamePrefix: jest.fn(),
     };
 
-    mockBcryptStrategy = { hash: jest.fn(), verify: jest.fn() } as unknown as jest.Mocked<BcryptStrategy>;
+    mockBcryptStrategy = {
+      hash: jest.fn(),
+      verify: jest.fn(),
+    } as unknown as jest.Mocked<BcryptStrategy>;
     mockJwtService = { sign: jest.fn() } as unknown as jest.Mocked<JwtService>;
     mockSuggestionsUtil = {
       generateSuggestions: jest.fn(),
@@ -1059,7 +1129,7 @@ describe('UserService', () => {
       mockUserRepository,
       mockBcryptStrategy,
       mockJwtService,
-      mockSuggestionsUtil,
+      mockSuggestionsUtil
     );
   });
 
@@ -1086,13 +1156,17 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
   });
 
@@ -1105,7 +1179,9 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });
@@ -1116,6 +1192,7 @@ describe('UserService', () => {
 ```bash
 npm run test:unit -- --testPathPattern="modules/user/__tests__/user.service"
 ```
+
 Expected: PASS — 5 tests passing.
 
 **Step 3: Commit**
@@ -1142,6 +1219,7 @@ rm -rf src/routes/
 ```bash
 npm run lint
 ```
+
 Expected: no errors. If there are import errors pointing to `routes/`, you missed updating a file — fix the import and re-run.
 
 **Step 3: Build**
@@ -1149,6 +1227,7 @@ Expected: no errors. If there are import errors pointing to `routes/`, you misse
 ```bash
 npm run build
 ```
+
 Expected: clean compile.
 
 **Step 4: Run unit tests**
@@ -1156,6 +1235,7 @@ Expected: clean compile.
 ```bash
 npm run test:unit
 ```
+
 Expected: all tests pass. Check that old test files in `routes/` are gone and new tests in `modules/` and `infrastructure/` run correctly.
 
 **Step 5: Run integration tests**
@@ -1163,6 +1243,7 @@ Expected: all tests pass. Check that old test files in `routes/` are gone and ne
 ```bash
 npm run test:int
 ```
+
 Expected: all integration tests pass. These tests hit a real database via Testcontainers — if they fail, check that `PrismaUserRepository` methods match what the integration tests call.
 
 **Step 6: Format**

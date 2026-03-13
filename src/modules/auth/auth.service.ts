@@ -1,7 +1,10 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../../domain/user/user.entity';
-import { IUserRepository, USER_REPOSITORY } from '../../domain/user/user.repository.port';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../domain/user/user.repository.port';
 import { BcryptStrategy } from './strategies/bcrypt.strategy';
 import { LoginDto } from './dto/login.dto';
 
@@ -10,10 +13,12 @@ export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     private readonly bcryptStrategy: BcryptStrategy,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {}
 
-  async loginUser(credentials: LoginDto): Promise<{ user: User; token: string }> {
+  async loginUser(
+    credentials: LoginDto
+  ): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(credentials.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -23,7 +28,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isValid = await this.bcryptStrategy.verify(credentials.password, user.passwordHash);
+    const isValid = await this.bcryptStrategy.verify(
+      credentials.password,
+      user.passwordHash
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid email or password');
     }

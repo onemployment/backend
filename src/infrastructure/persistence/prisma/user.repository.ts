@@ -52,7 +52,10 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async updateProfile(id: string, updates: ProfileUpdateData): Promise<User> {
-    const user = await this.prisma.user.update({ where: { id }, data: updates });
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: updates,
+    });
     return UserMapper.toDomain(user);
   }
 

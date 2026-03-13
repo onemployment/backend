@@ -1,11 +1,15 @@
-import { INestApplication, ValidationPipe, BadRequestException } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module';
 import { GlobalExceptionFilter } from '../../../src/shared/filters/global-exception.filter';
 import { LoggerService } from '../../../src/shared/logger/logger.service';
 import { PrismaService } from '../../../src/database/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { BcryptStrategy } from '../../../src/routes/auth/strategies/bcrypt.strategy';
+import { BcryptStrategy } from '../../../src/modules/auth/strategies/bcrypt.strategy';
 import { User } from '@prisma/client';
 
 export interface TestAppSetup {
@@ -80,16 +84,22 @@ export const createTestUser = async (
 };
 
 export const createTestJWT = (jwtService: JwtService, user: User): string => {
-  return jwtService.sign({ sub: user.id, email: user.email, username: user.username });
+  return jwtService.sign({
+    sub: user.id,
+    email: user.email,
+    username: user.username,
+  });
 };
 
-export const createTestUserData = (overrides: {
-  email?: string;
-  username?: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
-} = {}) => ({
+export const createTestUserData = (
+  overrides: {
+    email?: string;
+    username?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+  } = {}
+) => ({
   email: overrides.email ?? 'default@example.com',
   username: overrides.username ?? 'defaultuser',
   password: overrides.password ?? 'DefaultPass123!',

@@ -46,7 +46,10 @@ describe('UserService', () => {
       findUsersByUsernamePrefix: jest.fn(),
     };
 
-    mockBcryptStrategy = { hash: jest.fn(), verify: jest.fn() } as unknown as jest.Mocked<BcryptStrategy>;
+    mockBcryptStrategy = {
+      hash: jest.fn(),
+      verify: jest.fn(),
+    } as unknown as jest.Mocked<BcryptStrategy>;
     mockJwtService = { sign: jest.fn() } as unknown as jest.Mocked<JwtService>;
     mockSuggestionsUtil = {
       generateSuggestions: jest.fn(),
@@ -57,7 +60,7 @@ describe('UserService', () => {
       mockUserRepository,
       mockBcryptStrategy,
       mockJwtService,
-      mockSuggestionsUtil,
+      mockSuggestionsUtil
     );
   });
 
@@ -84,13 +87,17 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
   });
 
@@ -103,7 +110,9 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });

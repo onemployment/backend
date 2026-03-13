@@ -182,7 +182,10 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username: 'firstuser',
         });
 
-        await request(app.getHttpServer()).post('/api/v1/user').send(firstUser).expect(201);
+        await request(app.getHttpServer())
+          .post('/api/v1/user')
+          .send(firstUser)
+          .expect(201);
 
         // Try to register second user with same email
         const secondUser = createTestUserData({
@@ -218,7 +221,10 @@ describe('Complete User Flow Scenarios Integration Tests', () => {
           username,
         });
 
-        await request(app.getHttpServer()).post('/api/v1/user').send(firstUser).expect(201);
+        await request(app.getHttpServer())
+          .post('/api/v1/user')
+          .send(firstUser)
+          .expect(201);
 
         // Try to register with same username
         const conflictUser = createTestUserData({

@@ -23,16 +23,20 @@ export class UserService {
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     private readonly bcryptStrategy: BcryptStrategy,
     private readonly jwtService: JwtService,
-    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil,
+    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}
 
-  async registerUser(data: RegisterUserDto): Promise<{ user: User; token: string }> {
+  async registerUser(
+    data: RegisterUserDto
+  ): Promise<{ user: User; token: string }> {
     if (ValidationUtil.isReservedUsername(data.username)) {
       throw new BadRequestException('Username is reserved and cannot be used');
     }
 
     if (await this.userRepository.isEmailTaken(data.email)) {
-      throw new ConflictException('Email already registered. Please sign in instead');
+      throw new ConflictException(
+        'Email already registered. Please sign in instead'
+      );
     }
 
     if (await this.userRepository.isUsernameTaken(data.username)) {
@@ -67,13 +71,18 @@ export class UserService {
     return user;
   }
 
-  async updateUserProfile(userId: string, updates: UpdateUserProfileDto): Promise<User> {
+  async updateUserProfile(
+    userId: string,
+    updates: UpdateUserProfileDto
+  ): Promise<User> {
     const existing = await this.userRepository.findById(userId);
     if (!existing) throw new NotFoundException('User not found');
 
     const sanitized: UpdateUserProfileDto = {};
-    if (updates.firstName !== undefined) sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
-    if (updates.lastName !== undefined) sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
+    if (updates.firstName !== undefined)
+      sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
+    if (updates.lastName !== undefined)
+      sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
     if (updates.displayName !== undefined) {
       sanitized.displayName = updates.displayName
         ? ValidationUtil.sanitizeName(updates.displayName)
@@ -83,19 +92,27 @@ export class UserService {
     return this.userRepository.updateProfile(userId, sanitized);
   }
 
-  async validateUsername(username: string): Promise<{ available: boolean; suggestions?: string[] }> {
-    if (!ValidationUtil.validateUsername(username) || ValidationUtil.isReservedUsername(username)) {
+  async validateUsername(
+    username: string
+  ): Promise<{ available: boolean; suggestions?: string[] }> {
+    if (
+      !ValidationUtil.validateUsername(username) ||
+      ValidationUtil.isReservedUsername(username)
+    ) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
-    const available = await this.usernameSuggestionsUtil.isUsernameAvailable(username);
+    const available =
+      await this.usernameSuggestionsUtil.isUsernameAvailable(username);
     if (!available) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
