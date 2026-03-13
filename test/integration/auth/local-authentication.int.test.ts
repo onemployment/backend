@@ -2,13 +2,7 @@ import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../src/database/prisma.service';
-import { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createTestApp, createTestUser, createTestJWT, TestAppSetup } from '../helpers/utils';
-
-const globalWithPostgres = global as typeof globalThis & {
-  postgresContainer: StartedPostgreSqlContainer;
-  prismaClient: any;
-};
 
 describe('Local Authentication Integration Tests', () => {
   let testSetup: TestAppSetup;

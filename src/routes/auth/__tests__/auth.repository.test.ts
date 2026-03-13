@@ -12,7 +12,7 @@ describe('AuthRepository', () => {
   });
 
   it('should find user by email (lowercased)', async () => {
-    const mockUser = { id: '1', email: 'test@example.com' } as any;
+    const mockUser = { id: '1', email: 'test@example.com' } as unknown as import('@prisma/client').User;
     prisma.user.findUnique.mockResolvedValue(mockUser);
 
     const result = await repository.findByEmail('TEST@EXAMPLE.COM');
@@ -24,7 +24,7 @@ describe('AuthRepository', () => {
   });
 
   it('should update lastLoginAt', async () => {
-    const updatedUser = { id: '1', lastLoginAt: new Date() } as any;
+    const updatedUser = { id: '1', lastLoginAt: new Date() } as unknown as import('@prisma/client').User;
     prisma.user.update.mockResolvedValue(updatedUser);
 
     const result = await repository.updateLastLogin('1');

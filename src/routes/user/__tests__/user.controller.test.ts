@@ -63,7 +63,7 @@ describe('UserController', () => {
   it('should return current user profile', async () => {
     mockUserService.getUserProfile.mockResolvedValue(mockUser);
     const mockReq = { user: { sub: 'uuid-1' } };
-    const result = await controller.getMe(mockReq as any);
+    const result = await controller.getMe(mockReq as unknown as { user: import('../../auth/strategies/jwt.strategy').JwtPayload });
     expect(result.user.id).toBe('uuid-1');
   });
 });

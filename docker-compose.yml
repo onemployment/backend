@@ -25,7 +25,7 @@ services:
       - /app/node_modules
     env_file:
       - .env
-    command: npx nodemon --exec "npx ts-node src/index.ts" --watch src --ext ts,js,json --legacy-watch --polling-interval 1000 # NOTE: polling is a temporary workaround for auto-refresh
+    command: npm run dev
     depends_on:
       postgres:
         condition: service_healthy

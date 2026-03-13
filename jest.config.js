@@ -18,7 +18,7 @@ module.exports = {
         'src/**/*.ts',
         '!src/**/__tests__/**',
         '!src/**/*.d.ts',
-        '!src/index.ts',
+        '!src/main.ts',
       ],
     },
     {
