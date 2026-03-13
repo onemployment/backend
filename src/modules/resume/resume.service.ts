@@ -57,7 +57,40 @@ export class ResumeService {
     });
   }
 
-  async analyzeResume(_userId: string): Promise<{ message: string }> {
-    throw new NotFoundException('Not yet implemented');
+  async analyzeResume(userId: string): Promise<{ message: string }> {
+    const resume = await this.resumeRepository.findByUserId(userId);
+    if (!resume) {
+      throw new NotFoundException('No resume found. Please upload one first.');
+    }
+
+    const buffer = await this.fileStorage.read(resume.storagePath);
+
+    const response = await this.anthropic.messages.create({
+      model: 'claude-opus-4-6',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: buffer.toString('base64'),
+              },
+            },
+            {
+              type: 'text',
+              text: 'What is this resume about?',
+            },
+          ],
+        },
+      ],
+    });
+
+    const text =
+      response.content[0]?.type === 'text' ? response.content[0].text : '';
+    return { message: text };
   }
 }

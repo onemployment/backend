@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ResumeService } from '../resume.service';
 import { IResumeRepository } from '../../../domain/resume/resume.repository.port';
 import { IFileStorage } from '../../../domain/resume/file-storage.port';
@@ -30,9 +30,9 @@ const mockStorage: jest.Mocked<IFileStorage> = {
 // Prevent real Anthropic client from being created
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    messages: { create: jest.fn() },
-  })),
+  default: jest.fn().mockImplementation(function (this: any) {
+    this.messages = { create: jest.fn() };
+  }),
 }));
 
 describe('ResumeService - upload', () => {
@@ -88,5 +88,37 @@ describe('ResumeService - upload', () => {
       expect.objectContaining({ userId: 'user-uuid', originalFilename: 'cv.pdf' })
     );
     expect(result.id).toBe('resume-uuid');
+  });
+});
+
+describe('ResumeService - analyze', () => {
+  let service: ResumeService;
+  let mockAnthropicCreate: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const Anthropic = require('@anthropic-ai/sdk').default;
+    Anthropic.mockClear();
+    service = new ResumeService(mockRepo, mockStorage, 'test-api-key');
+    const instance = Anthropic.mock.instances[0];
+    mockAnthropicCreate = instance.messages.create;
+  });
+
+  it('throws NotFoundException if user has no resume', async () => {
+    mockRepo.findByUserId.mockResolvedValue(null);
+    await expect(service.analyzeResume('user-uuid')).rejects.toThrow(NotFoundException);
+  });
+
+  it('reads file, calls Claude, and returns message', async () => {
+    mockRepo.findByUserId.mockResolvedValue(mockResume);
+    mockStorage.read.mockResolvedValue(Buffer.from('pdf content'));
+    mockAnthropicCreate.mockResolvedValue({
+      content: [{ type: 'text', text: 'This is a software engineer resume.' }],
+    });
+
+    const result = await service.analyzeResume('user-uuid');
+
+    expect(mockStorage.read).toHaveBeenCalledWith(mockResume.storagePath);
+    expect(result.message).toBe('This is a software engineer resume.');
   });
 });
