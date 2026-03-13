@@ -11,7 +11,10 @@ import {
   IUserRepository,
   USER_REPOSITORY,
 } from '../../domain/user/user.repository.port';
-import { IPasswordStrategy, PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
+import {
+  IPasswordStrategy,
+  PASSWORD_STRATEGY,
+} from '../../domain/auth/password-strategy.port';
 import { UsernameSuggestionsUtil } from './utils/username-suggestions.util';
 import { ValidationUtil } from './utils/validation.util';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -21,7 +24,8 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 export class UserService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(PASSWORD_STRATEGY) private readonly passwordStrategy: IPasswordStrategy,
+    @Inject(PASSWORD_STRATEGY)
+    private readonly passwordStrategy: IPasswordStrategy,
     private readonly jwtService: JwtService,
     private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}

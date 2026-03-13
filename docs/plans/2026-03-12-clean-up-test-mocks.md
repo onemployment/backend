@@ -13,6 +13,7 @@
 ### Task 1: Create IPasswordStrategy port
 
 **Files:**
+
 - Create: `src/domain/auth/password-strategy.port.ts`
 
 Pure TypeScript — no NestJS decorators, no imports from other files.
@@ -35,6 +36,7 @@ export interface IPasswordStrategy {
 ```bash
 npx tsc --noEmit
 ```
+
 Expected: no errors.
 
 **Step 3: Commit**
@@ -49,6 +51,7 @@ git commit -m "feat: add IPasswordStrategy domain port"
 ### Task 2: Update AuthModule to bind PASSWORD_STRATEGY token
 
 **Files:**
+
 - Modify: `src/modules/auth/auth.module.ts`
 
 Replace the `BcryptStrategy` provider token with `PASSWORD_STRATEGY`. Export the token so `UserModule` (which imports `AuthModule`) can inject it.
@@ -96,7 +99,8 @@ import { PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
     AuthService,
     {
       provide: PASSWORD_STRATEGY,
-      useFactory: (config: AppConfigService) => new BcryptStrategy(config.saltRounds),
+      useFactory: (config: AppConfigService) =>
+        new BcryptStrategy(config.saltRounds),
       inject: [AppConfigService],
     },
     JwtStrategy,
@@ -112,6 +116,7 @@ export class AuthModule {}
 ```bash
 npx tsc --noEmit
 ```
+
 Expected: no errors. (AuthService will show an error if it still injects `BcryptStrategy` — that's fine, fix it in Task 3.)
 
 **Step 4: Commit**
@@ -126,6 +131,7 @@ git commit -m "feat: bind BcryptStrategy to PASSWORD_STRATEGY DI token in AuthMo
 ### Task 3: Update AuthService to inject IPasswordStrategy
 
 **Files:**
+
 - Modify: `src/modules/auth/auth.service.ts`
 
 **Step 1: Write the updated service**
@@ -137,19 +143,28 @@ The only changes are: remove `BcryptStrategy` import, add `IPasswordStrategy`/`P
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../../domain/user/user.entity';
-import { IUserRepository, USER_REPOSITORY } from '../../domain/user/user.repository.port';
-import { IPasswordStrategy, PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../domain/user/user.repository.port';
+import {
+  IPasswordStrategy,
+  PASSWORD_STRATEGY,
+} from '../../domain/auth/password-strategy.port';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(PASSWORD_STRATEGY) private readonly passwordStrategy: IPasswordStrategy,
-    private readonly jwtService: JwtService,
+    @Inject(PASSWORD_STRATEGY)
+    private readonly passwordStrategy: IPasswordStrategy,
+    private readonly jwtService: JwtService
   ) {}
 
-  async loginUser(credentials: LoginDto): Promise<{ user: User; token: string }> {
+  async loginUser(
+    credentials: LoginDto
+  ): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(credentials.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -159,7 +174,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isValid = await this.passwordStrategy.verify(credentials.password, user.passwordHash);
+    const isValid = await this.passwordStrategy.verify(
+      credentials.password,
+      user.passwordHash
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -182,6 +200,7 @@ export class AuthService {
 ```bash
 npx tsc --noEmit
 ```
+
 Expected: no errors.
 
 **Step 3: Commit**
@@ -196,6 +215,7 @@ git commit -m "feat: update AuthService to inject IPasswordStrategy port"
 ### Task 4: Update UserService to inject IPasswordStrategy
 
 **Files:**
+
 - Modify: `src/modules/user/user.service.ts`
 
 `UserModule` imports `AuthModule`, which now exports `PASSWORD_STRATEGY` — so the token is already available in `UserModule`'s DI container.
@@ -215,8 +235,14 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../../domain/user/user.entity';
-import { IUserRepository, USER_REPOSITORY } from '../../domain/user/user.repository.port';
-import { IPasswordStrategy, PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../domain/user/user.repository.port';
+import {
+  IPasswordStrategy,
+  PASSWORD_STRATEGY,
+} from '../../domain/auth/password-strategy.port';
 import { UsernameSuggestionsUtil } from './utils/username-suggestions.util';
 import { ValidationUtil } from './utils/validation.util';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -226,18 +252,23 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 export class UserService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(PASSWORD_STRATEGY) private readonly passwordStrategy: IPasswordStrategy,
+    @Inject(PASSWORD_STRATEGY)
+    private readonly passwordStrategy: IPasswordStrategy,
     private readonly jwtService: JwtService,
-    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil,
+    private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}
 
-  async registerUser(data: RegisterUserDto): Promise<{ user: User; token: string }> {
+  async registerUser(
+    data: RegisterUserDto
+  ): Promise<{ user: User; token: string }> {
     if (ValidationUtil.isReservedUsername(data.username)) {
       throw new BadRequestException('Username is reserved and cannot be used');
     }
 
     if (await this.userRepository.isEmailTaken(data.email)) {
-      throw new ConflictException('Email already registered. Please sign in instead');
+      throw new ConflictException(
+        'Email already registered. Please sign in instead'
+      );
     }
 
     if (await this.userRepository.isUsernameTaken(data.username)) {
@@ -272,13 +303,18 @@ export class UserService {
     return user;
   }
 
-  async updateUserProfile(userId: string, updates: UpdateUserProfileDto): Promise<User> {
+  async updateUserProfile(
+    userId: string,
+    updates: UpdateUserProfileDto
+  ): Promise<User> {
     const existing = await this.userRepository.findById(userId);
     if (!existing) throw new NotFoundException('User not found');
 
     const sanitized: UpdateUserProfileDto = {};
-    if (updates.firstName !== undefined) sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
-    if (updates.lastName !== undefined) sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
+    if (updates.firstName !== undefined)
+      sanitized.firstName = ValidationUtil.sanitizeName(updates.firstName);
+    if (updates.lastName !== undefined)
+      sanitized.lastName = ValidationUtil.sanitizeName(updates.lastName);
     if (updates.displayName !== undefined) {
       sanitized.displayName = updates.displayName
         ? ValidationUtil.sanitizeName(updates.displayName)
@@ -288,19 +324,27 @@ export class UserService {
     return this.userRepository.updateProfile(userId, sanitized);
   }
 
-  async validateUsername(username: string): Promise<{ available: boolean; suggestions?: string[] }> {
-    if (!ValidationUtil.validateUsername(username) || ValidationUtil.isReservedUsername(username)) {
+  async validateUsername(
+    username: string
+  ): Promise<{ available: boolean; suggestions?: string[] }> {
+    if (
+      !ValidationUtil.validateUsername(username) ||
+      ValidationUtil.isReservedUsername(username)
+    ) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
-    const available = await this.usernameSuggestionsUtil.isUsernameAvailable(username);
+    const available =
+      await this.usernameSuggestionsUtil.isUsernameAvailable(username);
     if (!available) {
       return {
         available: false,
-        suggestions: await this.usernameSuggestionsUtil.generateSuggestions(username),
+        suggestions:
+          await this.usernameSuggestionsUtil.generateSuggestions(username),
       };
     }
 
@@ -325,6 +369,7 @@ export class UserService {
 ```bash
 npx tsc --noEmit
 ```
+
 Expected: no errors.
 
 **Step 3: Run unit tests to verify nothing broke**
@@ -332,6 +377,7 @@ Expected: no errors.
 ```bash
 npm run test:unit
 ```
+
 Expected: all tests pass (tests still reference `BcryptStrategy` — that's fine until Task 5).
 
 **Step 4: Commit**
@@ -346,11 +392,13 @@ git commit -m "feat: update UserService to inject IPasswordStrategy port"
 ### Task 5: Clean up all test casts
 
 **Files:**
+
 - Modify: `src/modules/auth/__tests__/auth.service.test.ts`
 - Modify: `src/modules/user/__tests__/user.service.test.ts`
 - Modify: `src/modules/user/utils/__tests__/username-suggestions.util.test.ts`
 
 Three different fixes:
+
 - `IPasswordStrategy` — plain object literal, no cast (it's an interface)
 - `JwtService` and `UsernameSuggestionsUtil` — use `mock<T>()` from `jest-mock-extended`
 - `IUserRepository` in `username-suggestions.util.test.ts` — remove cast (already an interface)
@@ -413,7 +461,11 @@ describe('AuthService', () => {
 
     mockJwtService = mock<JwtService>();
 
-    authService = new AuthService(mockUserRepository, mockPasswordStrategy, mockJwtService);
+    authService = new AuthService(
+      mockUserRepository,
+      mockPasswordStrategy,
+      mockJwtService
+    );
   });
 
   describe('loginUser', () => {
@@ -430,23 +482,34 @@ describe('AuthService', () => {
 
       expect(result.token).toBe('mock-token');
       expect(result.user).toEqual(updatedUser);
-      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(
+        mockUser.id
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when passwordHash is null', async () => {
-      mockUserRepository.findByEmail.mockResolvedValue({ ...mockUser, passwordHash: null });
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      mockUserRepository.findByEmail.mockResolvedValue({
+        ...mockUser,
+        passwordHash: null,
+      });
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException when password is wrong', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
       mockPasswordStrategy.verify.mockResolvedValue(false);
-      await expect(authService.loginUser(credentials)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(credentials)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
   });
 });
@@ -517,7 +580,7 @@ describe('UserService', () => {
       mockUserRepository,
       mockPasswordStrategy,
       mockJwtService,
-      mockSuggestionsUtil,
+      mockSuggestionsUtil
     );
   });
 
@@ -544,13 +607,17 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
   });
 
@@ -563,7 +630,9 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });
@@ -613,6 +682,7 @@ describe('UsernameSuggestionsUtil', () => {
 ```bash
 npm run test:unit
 ```
+
 Expected: all 20 tests pass, zero casts in test files.
 
 **Step 5: Verify no casts remain**
@@ -620,6 +690,7 @@ Expected: all 20 tests pass, zero casts in test files.
 ```bash
 grep -r "as unknown as jest.Mocked" src/ --include="*.ts"
 ```
+
 Expected: no output.
 
 **Step 6: Commit**
@@ -634,33 +705,40 @@ git commit -m "test: remove double-casts — use IPasswordStrategy interface and
 ### Task 6: Full verification
 
 **Step 1: Run lint**
+
 ```bash
 npm run lint
 ```
 
 **Step 2: Build**
+
 ```bash
 npx tsc --noEmit
 ```
 
 **Step 3: Unit tests**
+
 ```bash
 npm run test:unit
 ```
 
 **Step 4: Integration tests**
+
 ```bash
 npm run test:int
 ```
 
 **Step 5: Format**
+
 ```bash
 npm run format
 ```
 
 **Step 6: Final commit**
+
 ```bash
 git add -A
 git commit -m "chore: format after mock cleanup"
 ```
+
 (Skip if format produces no changes.)

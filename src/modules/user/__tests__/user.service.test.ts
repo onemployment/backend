@@ -59,7 +59,7 @@ describe('UserService', () => {
       mockUserRepository,
       mockPasswordStrategy,
       mockJwtService,
-      mockSuggestionsUtil,
+      mockSuggestionsUtil
     );
   });
 
@@ -86,13 +86,17 @@ describe('UserService', () => {
 
     it('should throw ConflictException when email is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw ConflictException when username is taken', async () => {
       mockUserRepository.isEmailTaken.mockResolvedValue(false);
       mockUserRepository.isUsernameTaken.mockResolvedValue(true);
-      await expect(userService.registerUser(validData)).rejects.toThrow(ConflictException);
+      await expect(userService.registerUser(validData)).rejects.toThrow(
+        ConflictException
+      );
     });
   });
 
@@ -105,7 +109,9 @@ describe('UserService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
-      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(userService.getUserProfile('bad-id')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });

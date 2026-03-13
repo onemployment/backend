@@ -31,7 +31,8 @@ import { PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
     AuthService,
     {
       provide: PASSWORD_STRATEGY,
-      useFactory: (config: AppConfigService) => new BcryptStrategy(config.saltRounds),
+      useFactory: (config: AppConfigService) =>
+        new BcryptStrategy(config.saltRounds),
       inject: [AppConfigService],
     },
     JwtStrategy,

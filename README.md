@@ -1,4 +1,4 @@
-# OnEmployment Backend API
+# onemployment Backend API
 
 A production-ready Node.js TypeScript API for user management and authentication. Built with PostgreSQL, JWT tokens, comprehensive validation, and automated testing.
 
