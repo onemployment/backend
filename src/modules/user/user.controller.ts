@@ -15,7 +15,7 @@ import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { JwtPayload } from '../../infrastructure/security/jwt.strategy';
+import { JwtPayload } from '../auth/ports/jwt-payload.port';
 
 @Controller('user')
 export class UserController {
