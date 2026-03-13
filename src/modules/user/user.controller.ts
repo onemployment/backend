@@ -10,7 +10,7 @@ import {
   HttpCode,
   BadRequestException,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User } from '../../domain/user/user.entity';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
