@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
+import { IPasswordHashStrategy } from '../../modules/auth/ports/password-hash-strategy.port';
 
 @Injectable()
-export class BcryptStrategy {
+export class BcryptStrategy implements IPasswordHashStrategy {
   constructor(private readonly saltRounds: number) {}
 
   async hash(password: string): Promise<string> {
