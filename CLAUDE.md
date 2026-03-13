@@ -1,5 +1,9 @@
 # Backend Repository - Implementation Guide
 
+## AI Agent Rules
+
+- **Never add `Co-Authored-By` lines to commit messages.**
+
 ## Repository Context
 
 **Purpose**: Production-ready Node.js/TypeScript API providing authentication and core platform services
