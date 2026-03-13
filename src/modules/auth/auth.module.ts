@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AppConfigService } from '../../shared/config/app-config.service';
 import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma/prisma-persistence.module';
+import { PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
 
 @Module({
   imports: [
@@ -29,14 +30,13 @@ import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma
   providers: [
     AuthService,
     {
-      provide: BcryptStrategy,
-      useFactory: (config: AppConfigService) =>
-        new BcryptStrategy(config.saltRounds),
+      provide: PASSWORD_STRATEGY,
+      useFactory: (config: AppConfigService) => new BcryptStrategy(config.saltRounds),
       inject: [AppConfigService],
     },
     JwtStrategy,
     JwtAuthGuard,
   ],
-  exports: [JwtAuthGuard, JwtModule, BcryptStrategy],
+  exports: [JwtAuthGuard, JwtModule, PASSWORD_STRATEGY],
 })
 export class AuthModule {}
