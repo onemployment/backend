@@ -4,8 +4,8 @@ import { TerminusModule } from '@nestjs/terminus';
 import { SharedModule } from './shared/shared.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
-import { AuthModule } from './routes/auth/auth.module';
-import { UserModule } from './routes/user/user.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
