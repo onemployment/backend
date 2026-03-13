@@ -15,6 +15,7 @@
 The interface currently lives in `src/domain/auth/` which is wrong — it's not a business domain concept, it's a technical interface for testability. Rename it to `IPasswordHashStrategy` and move it next to the auth module that owns it.
 
 **Files:**
+
 - Create: `src/modules/auth/ports/password-hash-strategy.port.ts`
 - Modify: `src/modules/auth/auth.service.ts`
 - Modify: `src/modules/auth/auth.module.ts`
@@ -38,13 +39,16 @@ export interface IPasswordHashStrategy {
 **Step 2: Update `auth.service.ts` imports**
 
 Replace:
+
 ```typescript
 import {
   IPasswordStrategy,
   PASSWORD_STRATEGY,
 } from '../../domain/auth/password-strategy.port';
 ```
+
 With:
+
 ```typescript
 import {
   IPasswordHashStrategy,
@@ -53,6 +57,7 @@ import {
 ```
 
 Also rename the type annotation in the constructor:
+
 ```typescript
 @Inject(PASSWORD_STRATEGY)
 private readonly passwordStrategy: IPasswordHashStrategy,
@@ -61,10 +66,13 @@ private readonly passwordStrategy: IPasswordHashStrategy,
 **Step 3: Update `auth.module.ts` imports**
 
 Replace:
+
 ```typescript
 import { PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
 ```
+
 With:
+
 ```typescript
 import { PASSWORD_STRATEGY } from './ports/password-hash-strategy.port';
 ```
@@ -72,20 +80,25 @@ import { PASSWORD_STRATEGY } from './ports/password-hash-strategy.port';
 **Step 4: Update `auth.service.test.ts` imports**
 
 Replace:
+
 ```typescript
 import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
 ```
+
 With:
+
 ```typescript
 import { IPasswordHashStrategy } from '../ports/password-hash-strategy.port';
 ```
 
 Also update the type:
+
 ```typescript
 let mockPasswordStrategy: jest.Mocked<IPasswordHashStrategy>;
 ```
 
 And the mock object (add the `hash` mock that was implicit):
+
 ```typescript
 mockPasswordStrategy = {
   hash: jest.fn(),
@@ -96,13 +109,16 @@ mockPasswordStrategy = {
 **Step 5: Update `user.service.ts` imports**
 
 Replace:
+
 ```typescript
 import {
   IPasswordStrategy,
   PASSWORD_STRATEGY,
 } from '../../domain/auth/password-strategy.port';
 ```
+
 With:
+
 ```typescript
 import {
   IPasswordHashStrategy,
@@ -111,6 +127,7 @@ import {
 ```
 
 Also rename the constructor type annotation:
+
 ```typescript
 @Inject(PASSWORD_STRATEGY)
 private readonly passwordStrategy: IPasswordHashStrategy,
@@ -119,15 +136,19 @@ private readonly passwordStrategy: IPasswordHashStrategy,
 **Step 6: Update `user.service.test.ts` imports**
 
 Replace:
+
 ```typescript
 import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
 ```
+
 With:
+
 ```typescript
 import { IPasswordHashStrategy } from '../../auth/ports/password-hash-strategy.port';
 ```
 
 Update the type:
+
 ```typescript
 let mockPasswordStrategy: jest.Mocked<IPasswordHashStrategy>;
 ```
@@ -137,6 +158,7 @@ let mockPasswordStrategy: jest.Mocked<IPasswordHashStrategy>;
 ```bash
 npm run test:unit
 ```
+
 Expected: all tests pass
 
 **Step 8: Delete the old domain/auth directory**
@@ -150,6 +172,7 @@ rm -rf src/domain/auth
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 10: Commit**
@@ -172,6 +195,7 @@ git commit -m "refactor: move IPasswordHashStrategy port to modules/auth/ports"
 `BcryptStrategy` and `JwtStrategy` are infrastructure implementations, not application logic. They belong in `infrastructure/security/`.
 
 **Files:**
+
 - Create: `src/infrastructure/security/bcrypt.strategy.ts`
 - Create: `src/infrastructure/security/jwt.strategy.ts`
 - Modify: `src/modules/auth/auth.module.ts`
@@ -237,11 +261,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 **Step 3: Update `auth.module.ts` strategy imports**
 
 Replace:
+
 ```typescript
 import { BcryptStrategy } from './strategies/bcrypt.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 ```
+
 With:
+
 ```typescript
 import { BcryptStrategy } from '../../infrastructure/security/bcrypt.strategy';
 import { JwtStrategy } from '../../infrastructure/security/jwt.strategy';
@@ -252,6 +279,7 @@ import { JwtStrategy } from '../../infrastructure/security/jwt.strategy';
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 5: Delete the old strategies directory**
@@ -265,6 +293,7 @@ rm -rf src/modules/auth/strategies
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 7: Commit**
@@ -285,6 +314,7 @@ git commit -m "refactor: move BcryptStrategy and JwtStrategy to infrastructure/s
 Two modules currently serve the same Prisma infrastructure concern. Merge them into a single `PrismaModule`. The `PrismaService` file moves from `src/database/` to `src/infrastructure/persistence/prisma/` and is renamed `prisma.client.ts` (class name stays `PrismaService`).
 
 **Files:**
+
 - Create: `src/infrastructure/persistence/prisma/prisma.client.ts`
 - Modify: `src/infrastructure/persistence/prisma/prisma.module.ts` (was `prisma-persistence.module.ts`)
 - Modify: `src/infrastructure/persistence/prisma/user.repository.ts`
@@ -358,10 +388,13 @@ export class PrismaModule {}
 **Step 3: Update `user.repository.ts` import for `PrismaService`**
 
 Replace:
+
 ```typescript
 import { PrismaService } from '../../../database/prisma.service';
 ```
+
 With:
+
 ```typescript
 import { PrismaService } from './prisma.client';
 ```
@@ -369,10 +402,13 @@ import { PrismaService } from './prisma.client';
 **Step 4: Update `user.repository.test.ts` import for `PrismaService`**
 
 Replace:
+
 ```typescript
 import { PrismaService } from '../../../../database/prisma.service';
 ```
+
 With:
+
 ```typescript
 import { PrismaService } from '../prisma.client';
 ```
@@ -382,15 +418,19 @@ import { PrismaService } from '../prisma.client';
 **Step 5: Update `auth.module.ts`**
 
 Replace:
+
 ```typescript
 import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma/prisma-persistence.module';
 ```
+
 With:
+
 ```typescript
 import { PrismaModule } from '../../infrastructure/persistence/prisma/prisma.module';
 ```
 
 And in `@Module` imports:
+
 ```typescript
 imports: [
   PrismaModule,
@@ -402,15 +442,19 @@ imports: [
 **Step 6: Update `user.module.ts`**
 
 Replace:
+
 ```typescript
 import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma/prisma-persistence.module';
 ```
+
 With:
+
 ```typescript
 import { PrismaModule } from '../../infrastructure/persistence/prisma/prisma.module';
 ```
 
 And in `@Module` imports:
+
 ```typescript
 imports: [PrismaModule, AuthModule],
 ```
@@ -418,11 +462,13 @@ imports: [PrismaModule, AuthModule],
 **Step 7: Update `app.module.ts`** — remove `DatabaseModule`
 
 Replace:
+
 ```typescript
 import { TerminusModule } from '@nestjs/terminus';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 ```
+
 With nothing (these lines are removed). Also remove `TerminusModule`, `DatabaseModule`, and `HealthModule` from the `imports` array. Keep `ConfigModule`, `SharedModule`, `AuthModule`, `UserModule`.
 
 > Note: Health endpoint is addressed in Task 4. For now `app.module.ts` will temporarily have no health route — that's fine since we're not running integration tests yet.
@@ -432,6 +478,7 @@ With nothing (these lines are removed). Also remove `TerminusModule`, `DatabaseM
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 9: Delete old files**
@@ -446,6 +493,7 @@ rm src/infrastructure/persistence/prisma/prisma-persistence.module.ts
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 11: Commit**
@@ -471,6 +519,7 @@ git commit -m "refactor: merge DatabaseModule + PrismaPersistenceModule into Pri
 `TerminusModule`, `PrismaHealthIndicator`, and `HealthModule` are overkill. Replace with a simple `GET /health` that returns `200 { status: 'ok' }` — enough for the ALB health check.
 
 **Files:**
+
 - Create: `src/health.controller.ts`
 - Modify: `src/app.module.ts`
 - Delete: `src/health/` directory
@@ -519,6 +568,7 @@ export class AppModule {}
 ```bash
 npm run build && npm run test:unit
 ```
+
 Expected: compiles cleanly, all tests pass
 
 **Step 4: Delete the health directory**
@@ -538,6 +588,7 @@ npm uninstall @nestjs/terminus
 ```bash
 npm run build && npm run test:unit && npm run test:int
 ```
+
 Expected: compiles cleanly, all tests pass including integration tests
 
 **Step 7: Lint and format**
@@ -545,6 +596,7 @@ Expected: compiles cleanly, all tests pass including integration tests
 ```bash
 npm run lint && npm run format
 ```
+
 Fix any lint issues, then re-run lint to confirm clean.
 
 **Step 8: Commit**
