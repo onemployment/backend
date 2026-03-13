@@ -46,7 +46,10 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   lastLoginAt  DateTime?
-  
+
+  // Relations
+  resume       Resume?
+
   // Performance indexes
   @@index([email], name: "user_email_idx")
   @@index([username], name: "user_username_idx") 
@@ -56,4 +59,19 @@ model User {
   @@index([accountCreationMethod], name: "user_creation_method_idx")
   
   @@map("users")
+}
+
+model Resume {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  originalFilename String   @db.VarChar(255)
+  storagePath      String   @db.VarChar(500)
+  mimeType         String   @db.VarChar(100)
+  sizeBytes        Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
 }
