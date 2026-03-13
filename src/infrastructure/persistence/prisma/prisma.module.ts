@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { PrismaService } from './prisma.client';
 import { PrismaUserRepository } from './user.repository';
 import { USER_REPOSITORY } from '../../../domain/user/user.repository.port';
 
 @Module({
   providers: [
+    PrismaService,
     {
       provide: USER_REPOSITORY,
       useClass: PrismaUserRepository,
@@ -11,4 +13,4 @@ import { USER_REPOSITORY } from '../../../domain/user/user.repository.port';
   ],
   exports: [USER_REPOSITORY],
 })
-export class PrismaPersistenceModule {}
+export class PrismaModule {}

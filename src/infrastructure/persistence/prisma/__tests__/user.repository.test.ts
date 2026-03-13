@@ -1,5 +1,5 @@
 import { PrismaUserRepository } from '../user.repository';
-import { PrismaService } from '../../../../database/prisma.service';
+import { PrismaService } from '../prisma.client';
 import { mockDeep } from 'jest-mock-extended';
 import { User as PrismaUser } from '@prisma/client';
 

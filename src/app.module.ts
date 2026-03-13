@@ -1,9 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TerminusModule } from '@nestjs/terminus';
 import { SharedModule } from './shared/shared.module';
-import { DatabaseModule } from './database/database.module';
-import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -13,10 +10,7 @@ import { UserModule } from './modules/user/user.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    TerminusModule,
-    DatabaseModule,
     SharedModule,
-    HealthModule,
     AuthModule,
     UserModule,
   ],

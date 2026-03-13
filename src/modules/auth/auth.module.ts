@@ -7,12 +7,12 @@ import { BcryptStrategy } from '../../infrastructure/security/bcrypt.strategy';
 import { JwtStrategy } from '../../infrastructure/security/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AppConfigService } from '../../shared/config/app-config.service';
-import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma/prisma-persistence.module';
+import { PrismaModule } from '../../infrastructure/persistence/prisma/prisma.module';
 import { PASSWORD_STRATEGY } from './ports/password-hash-strategy.port';
 
 @Module({
   imports: [
-    PrismaPersistenceModule,
+    PrismaModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: (config: AppConfigService) => ({
