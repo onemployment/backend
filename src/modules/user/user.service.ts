@@ -12,9 +12,9 @@ import {
   USER_REPOSITORY,
 } from '../../domain/user/user.repository.port';
 import {
-  IPasswordStrategy,
+  IPasswordHashStrategy,
   PASSWORD_STRATEGY,
-} from '../../domain/auth/password-strategy.port';
+} from '../auth/ports/password-hash-strategy.port';
 import { UsernameSuggestionsUtil } from './utils/username-suggestions.util';
 import { ValidationUtil } from './utils/validation.util';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -25,7 +25,7 @@ export class UserService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     @Inject(PASSWORD_STRATEGY)
-    private readonly passwordStrategy: IPasswordStrategy,
+    private readonly passwordStrategy: IPasswordHashStrategy,
     private readonly jwtService: JwtService,
     private readonly usernameSuggestionsUtil: UsernameSuggestionsUtil
   ) {}

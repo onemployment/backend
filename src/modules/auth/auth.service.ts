@@ -6,9 +6,9 @@ import {
   USER_REPOSITORY,
 } from '../../domain/user/user.repository.port';
 import {
-  IPasswordStrategy,
+  IPasswordHashStrategy,
   PASSWORD_STRATEGY,
-} from '../../domain/auth/password-strategy.port';
+} from './ports/password-hash-strategy.port';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     @Inject(PASSWORD_STRATEGY)
-    private readonly passwordStrategy: IPasswordStrategy,
+    private readonly passwordStrategy: IPasswordHashStrategy,
     private readonly jwtService: JwtService
   ) {}
 

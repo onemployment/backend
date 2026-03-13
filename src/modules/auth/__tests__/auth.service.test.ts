@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { IUserRepository } from '../../../domain/user/user.repository.port';
-import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
+import { IPasswordHashStrategy } from '../ports/password-hash-strategy.port';
 import { User } from '../../../domain/user/user.entity';
 
 const mockUser: User = {
@@ -27,7 +27,7 @@ const mockUser: User = {
 describe('AuthService', () => {
   let authService: AuthService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
-  let mockPasswordStrategy: jest.Mocked<IPasswordStrategy>;
+  let mockPasswordStrategy: jest.Mocked<IPasswordHashStrategy>;
   let mockJwtService: jest.Mocked<JwtService>;
 
   beforeEach(() => {

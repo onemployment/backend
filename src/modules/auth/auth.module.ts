@@ -8,7 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AppConfigService } from '../../shared/config/app-config.service';
 import { PrismaPersistenceModule } from '../../infrastructure/persistence/prisma/prisma-persistence.module';
-import { PASSWORD_STRATEGY } from '../../domain/auth/password-strategy.port';
+import { PASSWORD_STRATEGY } from './ports/password-hash-strategy.port';
 
 @Module({
   imports: [

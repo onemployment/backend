@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UserService } from '../user.service';
 import { IUserRepository } from '../../../domain/user/user.repository.port';
-import { IPasswordStrategy } from '../../../domain/auth/password-strategy.port';
+import { IPasswordHashStrategy } from '../../auth/ports/password-hash-strategy.port';
 import { User } from '../../../domain/user/user.entity';
 import { UsernameSuggestionsUtil } from '../utils/username-suggestions.util';
 
@@ -28,7 +28,7 @@ const mockUser: User = {
 describe('UserService', () => {
   let userService: UserService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
-  let mockPasswordStrategy: jest.Mocked<IPasswordStrategy>;
+  let mockPasswordStrategy: jest.Mocked<IPasswordHashStrategy>;
   let mockJwtService: jest.Mocked<JwtService>;
   let mockSuggestionsUtil: jest.Mocked<UsernameSuggestionsUtil>;
 
