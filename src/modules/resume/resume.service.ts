@@ -42,19 +42,22 @@ export class ResumeService {
     }
 
     const existing = await this.resumeRepository.findByUserId(userId);
-    if (existing) {
-      await this.fileStorage.delete(existing.storagePath);
-    }
 
     const storagePath = await this.fileStorage.save(buffer, `${userId}.pdf`);
 
-    return this.resumeRepository.upsert({
+    const resume = await this.resumeRepository.upsert({
       userId,
       originalFilename,
       storagePath,
       mimeType,
       sizeBytes,
     });
+
+    if (existing) {
+      await this.fileStorage.delete(existing.storagePath);
+    }
+
+    return resume;
   }
 
   async analyzeResume(userId: string): Promise<{ message: string }> {
