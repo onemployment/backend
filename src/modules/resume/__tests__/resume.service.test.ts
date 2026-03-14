@@ -30,7 +30,7 @@ const mockStorage: jest.Mocked<IFileStorage> = {
 // Prevent real Anthropic client from being created
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(function (this: any) {
+  default: jest.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.messages = { create: jest.fn() };
   }),
 }));

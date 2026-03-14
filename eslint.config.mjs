@@ -19,6 +19,8 @@ export default [
       globals: {
         console: 'readonly',
         process: 'readonly',
+        Buffer: 'readonly',
+        Express: 'readonly',
       },
     },
     plugins: {
@@ -69,6 +71,7 @@ export default [
         jest: 'readonly',
         console: 'readonly',
         process: 'readonly',
+        Buffer: 'readonly',
         require: 'readonly',
         exports: 'readonly',
         module: 'readonly',
