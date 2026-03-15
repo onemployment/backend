@@ -22,7 +22,10 @@ describe('LocalFileStorageStrategy', () => {
       const storagePath = await strategy.save(buffer, 'test.pdf');
 
       expect(storagePath).toBeTruthy();
-      const exists = await fs.access(storagePath).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(storagePath)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
     });
 
@@ -33,7 +36,10 @@ describe('LocalFileStorageStrategy', () => {
 
       const storagePath = await nestedStrategy.save(buffer, 'file.pdf');
 
-      const exists = await fs.access(storagePath).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(storagePath)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
     });
   });
@@ -55,7 +61,10 @@ describe('LocalFileStorageStrategy', () => {
 
       await strategy.delete(storagePath);
 
-      const exists = await fs.access(storagePath).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(storagePath)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(false);
     });
   });

@@ -9,7 +9,10 @@ import {
   IResumeRepository,
   RESUME_REPOSITORY,
 } from '../../domain/resume/resume.repository.port';
-import { IFileStorage, FILE_STORAGE } from '../../domain/resume/file-storage.port';
+import {
+  IFileStorage,
+  FILE_STORAGE,
+} from '../../domain/resume/file-storage.port';
 import { Resume } from '../../domain/resume/resume.entity';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -20,7 +23,8 @@ export class ResumeService {
   private readonly anthropic: Anthropic;
 
   constructor(
-    @Inject(RESUME_REPOSITORY) private readonly resumeRepository: IResumeRepository,
+    @Inject(RESUME_REPOSITORY)
+    private readonly resumeRepository: IResumeRepository,
     @Inject(FILE_STORAGE) private readonly fileStorage: IFileStorage,
     @Inject('ANTHROPIC_API_KEY') private readonly anthropicApiKey: string
   ) {
@@ -41,23 +45,15 @@ export class ResumeService {
       throw new BadRequestException('File size must not exceed 10MB');
     }
 
-    const existing = await this.resumeRepository.findByUserId(userId);
-
     const storagePath = await this.fileStorage.save(buffer, `${userId}.pdf`);
 
-    const resume = await this.resumeRepository.upsert({
+    return this.resumeRepository.upsert({
       userId,
       originalFilename,
       storagePath,
       mimeType,
       sizeBytes,
     });
-
-    if (existing) {
-      await this.fileStorage.delete(existing.storagePath);
-    }
-
-    return resume;
   }
 
   async analyzeResume(userId: string): Promise<{ message: string }> {

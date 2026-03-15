@@ -11,6 +11,6 @@ import { USER_REPOSITORY } from '../../../domain/user/user.repository.port';
       useClass: PrismaUserRepository,
     },
   ],
-  exports: [USER_REPOSITORY],
+  exports: [PrismaService, USER_REPOSITORY],
 })
 export class PrismaModule {}
