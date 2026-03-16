@@ -17,12 +17,7 @@ const mockSourceDoc: SourceDocument = {
   updatedAt: new Date('2026-01-01'),
 };
 
-const mockCareerProfile: CareerProfile = {
-  id: 'profile-uuid',
-  userId: 'user-uuid',
-  extractionStatus: 'completed',
-  lastExtractedAt: new Date('2026-03-15'),
-  sourceDocumentId: 'doc-uuid',
+const mockExtractedData = {
   experiences: [
     {
       jobTitle: 'Software Engineer',
@@ -34,6 +29,54 @@ const mockCareerProfile: CareerProfile = {
       starExperiences: [],
     },
   ],
+  education: [
+    {
+      degree: 'Master of Science in Computer Science',
+      institution: 'University of Calgary',
+      graduationDate: null,
+      gpa: null,
+      relevantCoursework: [],
+      honors: [],
+      thesisProject: 'Network simulator built with Java/Spring',
+    },
+  ],
+  certifications: [
+    {
+      name: 'Node.js Advanced Concepts',
+      issuingOrganization: null,
+      dateObtained: null,
+      expirationDate: null,
+      credentialId: null,
+    },
+  ],
+  projects: [
+    {
+      name: 'Search Microservice Sync Validator',
+      description: 'Real-time validation between Elasticsearch and PostgreSQL',
+      technologiesUsed: ['Elasticsearch', 'PostgreSQL', 'Node.js'],
+      duration: null,
+      role: 'Technical Lead',
+      outcomes: ['Eliminated expensive daily full syncs'],
+      repositoryUrl: null,
+    },
+  ],
+  skills: {
+    language: ['TypeScript', 'JavaScript'],
+    framework: ['React', 'NestJS'],
+  },
+  professionalDevelopment: {
+    book: ['Drive: The Surprising Truth About What Motivates Us'],
+    course: ['Node.js Advanced Concepts'],
+  },
+};
+
+const mockCareerProfile: CareerProfile = {
+  id: 'profile-uuid',
+  userId: 'user-uuid',
+  extractionStatus: 'completed',
+  lastExtractedAt: new Date('2026-03-15'),
+  sourceDocumentId: 'doc-uuid',
+  ...mockExtractedData,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
 };
@@ -95,13 +138,11 @@ describe('CareerProfileService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('reads PDF, calls Claude, parses JSON, upserts and returns CareerProfile', async () => {
+  it('reads PDF, calls Claude, parses all sections, upserts and returns CareerProfile', async () => {
     mockSourceDocRepo.findByUserId.mockResolvedValue(mockSourceDoc);
     mockStorage.read.mockResolvedValue(Buffer.from('pdf content'));
     mockAnthropicCreate.mockResolvedValue({
-      content: [
-        { type: 'text', text: JSON.stringify(mockCareerProfile.experiences) },
-      ],
+      content: [{ type: 'text', text: JSON.stringify(mockExtractedData) }],
     });
     mockCareerProfileRepo.upsert.mockResolvedValue(mockCareerProfile);
 
@@ -114,13 +155,18 @@ describe('CareerProfileService', () => {
         userId: 'user-uuid',
         extractionStatus: 'completed',
         sourceDocumentId: 'doc-uuid',
+        experiences: mockExtractedData.experiences,
+        education: mockExtractedData.education,
+        certifications: mockExtractedData.certifications,
+        projects: mockExtractedData.projects,
+        skills: mockExtractedData.skills,
+        professionalDevelopment: mockExtractedData.professionalDevelopment,
       })
     );
     expect(result.id).toBe('profile-uuid');
-    expect(result.experiences).toHaveLength(1);
   });
 
-  it('upserts with empty experiences array when Claude returns invalid JSON', async () => {
+  it('upserts with empty collections when Claude returns invalid JSON', async () => {
     mockSourceDocRepo.findByUserId.mockResolvedValue(mockSourceDoc);
     mockStorage.read.mockResolvedValue(Buffer.from('pdf'));
     mockAnthropicCreate.mockResolvedValue({
@@ -129,12 +175,47 @@ describe('CareerProfileService', () => {
     mockCareerProfileRepo.upsert.mockResolvedValue({
       ...mockCareerProfile,
       experiences: [],
+      education: [],
+      certifications: [],
+      projects: [],
+      skills: {},
+      professionalDevelopment: {},
     });
 
     await service.extractFromSourceDocument('user-uuid');
 
     expect(mockCareerProfileRepo.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ experiences: [] })
+      expect.objectContaining({
+        experiences: [],
+        education: [],
+        certifications: [],
+        projects: [],
+        skills: {},
+        professionalDevelopment: {},
+      })
+    );
+  });
+
+  it('strips markdown code fences from Claude response before parsing', async () => {
+    mockSourceDocRepo.findByUserId.mockResolvedValue(mockSourceDoc);
+    mockStorage.read.mockResolvedValue(Buffer.from('pdf'));
+    mockAnthropicCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: '```json\n' + JSON.stringify(mockExtractedData) + '\n```',
+        },
+      ],
+    });
+    mockCareerProfileRepo.upsert.mockResolvedValue(mockCareerProfile);
+
+    await service.extractFromSourceDocument('user-uuid');
+
+    expect(mockCareerProfileRepo.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        experiences: mockExtractedData.experiences,
+        education: mockExtractedData.education,
+      })
     );
   });
 });
