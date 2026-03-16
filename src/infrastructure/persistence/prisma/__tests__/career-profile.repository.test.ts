@@ -8,6 +8,11 @@ const mockPrismaProfile = {
   lastExtractedAt: new Date('2026-03-15'),
   sourceDocumentId: 'doc-uuid',
   experiences: [],
+  education: [],
+  certifications: [],
+  projects: [],
+  skills: {},
+  professionalDevelopment: {},
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
 };
@@ -51,6 +56,11 @@ describe('PrismaCareerProfileRepository', () => {
       lastExtractedAt: new Date('2026-03-15'),
       sourceDocumentId: 'doc-uuid',
       experiences: [],
+      education: [],
+      certifications: [],
+      projects: [],
+      skills: {},
+      professionalDevelopment: {},
     };
 
     it('calls prisma upsert and returns domain entity', async () => {
