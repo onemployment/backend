@@ -1,8 +1,8 @@
-import { Resume as PrismaResume } from '@prisma/client';
-import { ResumeMapper } from '../resume.mapper';
+import { SourceDocument as PrismaSourceDocument } from '@prisma/client';
+import { SourceDocumentMapper } from '../source-document.mapper';
 
-const prismaResume: PrismaResume = {
-  id: 'resume-uuid',
+const prismaDoc: PrismaSourceDocument = {
+  id: 'doc-uuid',
   userId: 'user-uuid',
   originalFilename: 'my-cv.pdf',
   storagePath: 'uploads/resumes/user-uuid.pdf',
@@ -12,11 +12,11 @@ const prismaResume: PrismaResume = {
   updatedAt: new Date('2026-01-02T00:00:00.000Z'),
 };
 
-describe('ResumeMapper', () => {
+describe('SourceDocumentMapper', () => {
   it('maps all Prisma fields to domain entity', () => {
-    const domain = ResumeMapper.toDomain(prismaResume);
+    const domain = SourceDocumentMapper.toDomain(prismaDoc);
 
-    expect(domain.id).toBe('resume-uuid');
+    expect(domain.id).toBe('doc-uuid');
     expect(domain.userId).toBe('user-uuid');
     expect(domain.originalFilename).toBe('my-cv.pdf');
     expect(domain.storagePath).toBe('uploads/resumes/user-uuid.pdf');

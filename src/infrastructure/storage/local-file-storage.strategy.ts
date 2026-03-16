@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { IFileStorage } from '../../domain/resume/file-storage.port';
+import { IFileStorage } from '../../domain/source-document/file-storage.port';
 
 @Injectable()
 export class LocalFileStorageStrategy implements IFileStorage {

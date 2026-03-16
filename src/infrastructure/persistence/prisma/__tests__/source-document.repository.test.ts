@@ -1,8 +1,8 @@
-import { PrismaResumeRepository } from '../resume.repository';
-import { ResumeUpsertData } from '../../../../domain/resume/resume.repository.port';
+import { PrismaSourceDocumentRepository } from '../source-document.repository';
+import { SourceDocumentUpsertData } from '../../../../domain/source-document/source-document.repository.port';
 
-const mockPrismaResume = {
-  id: 'resume-uuid',
+const mockPrismaDoc = {
+  id: 'doc-uuid',
   userId: 'user-uuid',
   originalFilename: 'cv.pdf',
   storagePath: 'uploads/resumes/user-uuid.pdf',
@@ -13,38 +13,40 @@ const mockPrismaResume = {
 };
 
 const mockPrismaService = {
-  resume: {
+  sourceDocument: {
     findUnique: jest.fn(),
     upsert: jest.fn(),
     delete: jest.fn(),
   },
 };
 
-describe('PrismaResumeRepository', () => {
-  let repo: PrismaResumeRepository;
+describe('PrismaSourceDocumentRepository', () => {
+  let repo: PrismaSourceDocumentRepository;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    repo = new PrismaResumeRepository(mockPrismaService as never);
+    repo = new PrismaSourceDocumentRepository(mockPrismaService as never);
   });
 
   describe('findByUserId', () => {
-    it('returns null when no resume found', async () => {
-      mockPrismaService.resume.findUnique.mockResolvedValue(null);
+    it('returns null when no document found', async () => {
+      mockPrismaService.sourceDocument.findUnique.mockResolvedValue(null);
       const result = await repo.findByUserId('user-uuid');
       expect(result).toBeNull();
     });
 
-    it('returns mapped domain entity when resume found', async () => {
-      mockPrismaService.resume.findUnique.mockResolvedValue(mockPrismaResume);
+    it('returns mapped domain entity when document found', async () => {
+      mockPrismaService.sourceDocument.findUnique.mockResolvedValue(
+        mockPrismaDoc
+      );
       const result = await repo.findByUserId('user-uuid');
-      expect(result?.id).toBe('resume-uuid');
+      expect(result?.id).toBe('doc-uuid');
       expect(result?.userId).toBe('user-uuid');
     });
   });
 
   describe('upsert', () => {
-    const data: ResumeUpsertData = {
+    const data: SourceDocumentUpsertData = {
       userId: 'user-uuid',
       originalFilename: 'cv.pdf',
       storagePath: 'uploads/resumes/user-uuid.pdf',
@@ -53,9 +55,9 @@ describe('PrismaResumeRepository', () => {
     };
 
     it('calls prisma upsert and returns domain entity', async () => {
-      mockPrismaService.resume.upsert.mockResolvedValue(mockPrismaResume);
+      mockPrismaService.sourceDocument.upsert.mockResolvedValue(mockPrismaDoc);
       const result = await repo.upsert(data);
-      expect(mockPrismaService.resume.upsert).toHaveBeenCalledWith(
+      expect(mockPrismaService.sourceDocument.upsert).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'user-uuid' } })
       );
       expect(result.userId).toBe('user-uuid');
@@ -64,9 +66,9 @@ describe('PrismaResumeRepository', () => {
 
   describe('deleteByUserId', () => {
     it('calls prisma delete with userId', async () => {
-      mockPrismaService.resume.delete.mockResolvedValue(mockPrismaResume);
+      mockPrismaService.sourceDocument.delete.mockResolvedValue(mockPrismaDoc);
       await repo.deleteByUserId('user-uuid');
-      expect(mockPrismaService.resume.delete).toHaveBeenCalledWith({
+      expect(mockPrismaService.sourceDocument.delete).toHaveBeenCalledWith({
         where: { userId: 'user-uuid' },
       });
     });
