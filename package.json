@@ -26,6 +26,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
+    "docker:db:migrate:named": "docker compose exec -T backend npx prisma migrate dev --name",
     "docker:db:migrate": "docker compose exec backend npm run db:migrate:dev",
     "docker:db:status": "docker compose exec backend npm run db:migrate:status",
     "docker:db:studio": "docker compose exec backend npm run db:studio",

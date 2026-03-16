@@ -4,6 +4,14 @@
 
 - **Never add `Co-Authored-By` lines to commit messages.**
 
+- **Use package.json scripts for all application and DB operations — never construct raw `docker compose exec` commands for these.** The dev environment is container-based to avoid host OS/Node version issues. All DB operations have `docker:db:*` scripts that run correctly inside the container. Use them.
+
+- **For Prisma migrations, always use `npm run docker:db:migrate:named -- <descriptive-slug>`.** This runs non-interactively inside the container with the correct DB hostname. Containers must be running first (`npm run dev:start`). Example: `npm run docker:db:migrate:named -- add_career_profile_table`
+
+- **Tests and lint/format run on the host, not inside the container.** Unit tests (`test:unit`) have no DB dependency. Integration tests (`test:int`) use Testcontainers which manages its own isolated DB containers — they do not use the dev postgres container and must run from the host where Docker is accessible.
+
+- **For observability (logs, container status, health checks), use the package.json scripts first** (`docker:logs`, `docker:shell`). If those don't provide what you need, raw `docker compose` commands are acceptable as a fallback.
+
 ## Repository Context
 
 **Purpose**: Production-ready Node.js/TypeScript API providing authentication and core platform services
