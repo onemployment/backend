@@ -1,4 +1,12 @@
-import { CareerProfile, ProfessionalExperience } from './career-profile.entity';
+import {
+  CareerProfile,
+  ProfessionalExperience,
+  Education,
+  Certification,
+  Project,
+  Skills,
+  ProfessionalDevelopment,
+} from './career-profile.entity';
 
 export const CAREER_PROFILE_REPOSITORY = Symbol('ICareerProfileRepository');
 
@@ -8,6 +16,11 @@ export interface CareerProfileUpsertData {
   lastExtractedAt: Date | null;
   sourceDocumentId: string | null;
   experiences: ProfessionalExperience[];
+  education: Education[];
+  certifications: Certification[];
+  projects: Project[];
+  skills: Skills;
+  professionalDevelopment: ProfessionalDevelopment;
 }
 
 export interface ICareerProfileRepository {
