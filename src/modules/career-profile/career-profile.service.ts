@@ -21,7 +21,30 @@ import {
 import {
   CareerProfile,
   ProfessionalExperience,
+  Education,
+  Certification,
+  Project,
+  Skills,
+  ProfessionalDevelopment,
 } from '../../domain/career-profile/career-profile.entity';
+
+interface ExtractedProfile {
+  experiences: ProfessionalExperience[];
+  education: Education[];
+  certifications: Certification[];
+  projects: Project[];
+  skills: Skills;
+  professionalDevelopment: ProfessionalDevelopment;
+}
+
+const EMPTY_PROFILE: ExtractedProfile = {
+  experiences: [],
+  education: [],
+  certifications: [],
+  projects: [],
+  skills: {},
+  professionalDevelopment: {},
+};
 
 @Injectable()
 export class CareerProfileService {
@@ -55,7 +78,7 @@ export class CareerProfileService {
 
     const response = await this.anthropic.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
@@ -70,30 +93,83 @@ export class CareerProfileService {
             },
             {
               type: 'text',
-              text: `Extract all professional experiences from this resume as a JSON array. Return ONLY a valid JSON array with no other text, markdown, or explanation.
+              text: `Extract the complete professional profile from this resume as a single JSON object. Return ONLY valid JSON with no markdown, no code fences, no explanation.
 
-Each element must follow this exact structure:
+The JSON must follow this exact structure (use empty arrays/objects for sections not present in the resume):
+
 {
-  "jobTitle": "string",
-  "company": "string",
-  "location": "string or null",
-  "startDate": "string",
-  "endDate": "string or null (null if current role)",
-  "employmentType": "string or null",
-  "starExperiences": [
+  "experiences": [
     {
-      "title": "string (brief title for this accomplishment)",
-      "situation": "string (context and background)",
-      "task": "string (what needed to be done)",
-      "action": "string (specific actions taken)",
-      "result": "string (outcome and impact)",
-      "quantifiedMetrics": ["string (measurable results if any)"],
-      "domainContext": "string or null (business domain or industry context)"
+      "jobTitle": "string",
+      "company": "string",
+      "location": "string or null",
+      "startDate": "string",
+      "endDate": "string or null (null if current role)",
+      "employmentType": "string or null",
+      "starExperiences": [
+        {
+          "title": "string (brief title for this accomplishment)",
+          "situation": "string (context and background)",
+          "task": "string (what needed to be done)",
+          "action": "string (specific actions taken)",
+          "result": "string (outcome and impact)",
+          "quantifiedMetrics": ["string (measurable results if any)"],
+          "domainContext": "string or null (business domain or industry context)"
+        }
+      ]
     }
-  ]
+  ],
+  "education": [
+    {
+      "degree": "string",
+      "institution": "string",
+      "graduationDate": "string or null",
+      "gpa": "string or null",
+      "relevantCoursework": ["string"],
+      "honors": ["string"],
+      "thesisProject": "string or null"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "string",
+      "issuingOrganization": "string or null",
+      "dateObtained": "string or null",
+      "expirationDate": "string or null",
+      "credentialId": "string or null"
+    }
+  ],
+  "projects": [
+    {
+      "name": "string",
+      "description": "string",
+      "technologiesUsed": ["string"],
+      "duration": "string or null",
+      "role": "string or null",
+      "outcomes": ["string"],
+      "repositoryUrl": "string or null"
+    }
+  ],
+  "skills": {
+    "language": ["string"],
+    "framework": ["string"],
+    "database": ["string"],
+    "tool": ["string"],
+    "cloud": ["string"],
+    "soft": ["string"]
+  },
+  "professionalDevelopment": {
+    "book": ["string (title only)"],
+    "course": ["string (title only)"]
+  }
 }
 
-Extract as many starExperiences per job as the resume supports. Return only the JSON array.`,
+Rules:
+- Extract only what is factually present in the document. Never fabricate.
+- Use empty arrays [] or empty objects {} for sections not found in the resume.
+- For skills, use descriptive category keys. Include only categories that have at least one entry.
+- For professionalDevelopment, use type-as-category keys (book, course, conference, etc.). Include only categories found in the resume.
+- Extract as many starExperiences per job as the resume supports.`,
             },
           ],
         },
@@ -101,24 +177,23 @@ Extract as many starExperiences per job as the resume supports. Return only the 
     });
 
     const raw =
-      response.content[0]?.type === 'text' ? response.content[0].text : '[]';
+      response.content[0]?.type === 'text' ? response.content[0].text : '{}';
 
     this.logger.log(
       `Claude raw response for userId=${userId}: ${raw}`,
       'CareerProfileService'
     );
 
-    // Strip markdown code fences Claude sometimes adds despite being told not to
     const text = raw
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```\s*$/i, '')
       .trim();
 
-    let experiences: ProfessionalExperience[] = [];
+    let extracted: ExtractedProfile = EMPTY_PROFILE;
     try {
-      experiences = JSON.parse(text);
+      extracted = JSON.parse(text);
     } catch {
-      experiences = [];
+      extracted = EMPTY_PROFILE;
     }
 
     return this.careerProfileRepository.upsert({
@@ -126,7 +201,12 @@ Extract as many starExperiences per job as the resume supports. Return only the 
       extractionStatus: 'completed',
       lastExtractedAt: new Date(),
       sourceDocumentId: sourceDocument.id,
-      experiences,
+      experiences: extracted.experiences ?? [],
+      education: extracted.education ?? [],
+      certifications: extracted.certifications ?? [],
+      projects: extracted.projects ?? [],
+      skills: extracted.skills ?? {},
+      professionalDevelopment: extracted.professionalDevelopment ?? {},
     });
   }
 }
