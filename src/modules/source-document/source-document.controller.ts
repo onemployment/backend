@@ -9,19 +9,19 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ResumeService } from './resume.service';
+import { SourceDocumentService } from './source-document.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtPayload } from '../auth/ports/jwt-payload.port';
 
-@Controller('resume')
-export class ResumeController {
-  constructor(private readonly resumeService: ResumeService) {}
+@Controller('source-documents')
+export class SourceDocumentController {
+  constructor(private readonly sourceDocumentService: SourceDocumentService) {}
 
   @Post('upload')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(201)
-  async uploadResume(
+  async upload(
     @Request() req: { user: JwtPayload },
     @UploadedFile() file: Express.Multer.File
   ) {
@@ -29,7 +29,7 @@ export class ResumeController {
       throw new BadRequestException('No file provided');
     }
 
-    const resume = await this.resumeService.uploadResume(
+    const doc = await this.sourceDocumentService.uploadSourceDocument(
       req.user.sub,
       file.buffer,
       file.originalname,
@@ -38,21 +38,14 @@ export class ResumeController {
     );
 
     return {
-      message: 'Resume uploaded successfully',
-      resume: {
-        id: resume.id,
-        originalFilename: resume.originalFilename,
-        sizeBytes: resume.sizeBytes,
-        createdAt: resume.createdAt.toISOString(),
-        updatedAt: resume.updatedAt.toISOString(),
+      message: 'Source document uploaded successfully',
+      sourceDocument: {
+        id: doc.id,
+        originalFilename: doc.originalFilename,
+        sizeBytes: doc.sizeBytes,
+        createdAt: doc.createdAt.toISOString(),
+        updatedAt: doc.updatedAt.toISOString(),
       },
     };
-  }
-
-  @Post('analyze')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(200)
-  async analyzeResume(@Request() req: { user: JwtPayload }) {
-    return this.resumeService.analyzeResume(req.user.sub);
   }
 }
