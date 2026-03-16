@@ -32,7 +32,13 @@ describe('SourceDocumentService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new SourceDocumentService(mockRepo, mockStorage);
+    service = new SourceDocumentService(mockRepo, mockStorage, {
+      log: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      verbose: jest.fn(),
+    } as never);
   });
 
   it('throws BadRequestException if file is not a PDF', async () => {

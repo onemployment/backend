@@ -76,7 +76,14 @@ describe('CareerProfileService', () => {
       mockCareerProfileRepo,
       mockSourceDocRepo,
       mockStorage,
-      'test-api-key'
+      'test-api-key',
+      {
+        log: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        verbose: jest.fn(),
+      } as never
     );
     mockAnthropicCreate = Anthropic.mock.instances[0].messages.create;
   });

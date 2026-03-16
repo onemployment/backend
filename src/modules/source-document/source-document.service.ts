@@ -1,4 +1,9 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  LoggerService as ILoggerService,
+} from '@nestjs/common';
 import {
   ISourceDocumentRepository,
   SOURCE_DOCUMENT_REPOSITORY,
@@ -8,6 +13,7 @@ import {
   FILE_STORAGE,
 } from '../../domain/source-document/file-storage.port';
 import { SourceDocument } from '../../domain/source-document/source-document.entity';
+import { LOGGER } from '../../shared/logger/logger.port';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_MIME = 'application/pdf';
@@ -18,7 +24,9 @@ export class SourceDocumentService {
     @Inject(SOURCE_DOCUMENT_REPOSITORY)
     private readonly sourceDocumentRepository: ISourceDocumentRepository,
     @Inject(FILE_STORAGE)
-    private readonly fileStorage: IFileStorage
+    private readonly fileStorage: IFileStorage,
+    @Inject(LOGGER)
+    private readonly logger: ILoggerService
   ) {}
 
   async uploadSourceDocument(
@@ -36,13 +44,20 @@ export class SourceDocumentService {
     }
 
     const storagePath = await this.fileStorage.save(buffer, `${userId}.pdf`);
-    return this.sourceDocumentRepository.upsert({
+    const doc = await this.sourceDocumentRepository.upsert({
       userId,
       originalFilename,
       storagePath,
       mimeType,
       sizeBytes,
     });
+
+    this.logger.log(
+      `Source document uploaded: userId=${userId} filename=${originalFilename} size=${sizeBytes}`,
+      'SourceDocumentService'
+    );
+
+    return doc;
   }
 
   async findByUserId(userId: string): Promise<SourceDocument | null> {

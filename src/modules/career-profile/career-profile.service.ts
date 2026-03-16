@@ -1,5 +1,11 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  LoggerService as ILoggerService,
+} from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
+import { LOGGER } from '../../shared/logger/logger.port';
 import {
   ICareerProfileRepository,
   CAREER_PROFILE_REPOSITORY,
@@ -29,7 +35,9 @@ export class CareerProfileService {
     @Inject(FILE_STORAGE)
     private readonly fileStorage: IFileStorage,
     @Inject('ANTHROPIC_API_KEY')
-    private readonly anthropicApiKey: string
+    private readonly anthropicApiKey: string,
+    @Inject(LOGGER)
+    private readonly logger: ILoggerService
   ) {
     this.anthropic = new Anthropic({ apiKey: this.anthropicApiKey });
   }
@@ -92,8 +100,19 @@ Extract as many starExperiences per job as the resume supports. Return only the 
       ],
     });
 
-    const text =
+    const raw =
       response.content[0]?.type === 'text' ? response.content[0].text : '[]';
+
+    this.logger.log(
+      `Claude raw response for userId=${userId}: ${raw}`,
+      'CareerProfileService'
+    );
+
+    // Strip markdown code fences Claude sometimes adds despite being told not to
+    const text = raw
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
 
     let experiences: ProfessionalExperience[] = [];
     try {
