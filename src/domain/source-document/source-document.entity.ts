@@ -1,4 +1,4 @@
-export interface Resume {
+export interface SourceDocument {
   id: string;
   userId: string;
   originalFilename: string;
