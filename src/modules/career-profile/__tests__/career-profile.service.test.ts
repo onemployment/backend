@@ -218,4 +218,25 @@ describe('CareerProfileService', () => {
       })
     );
   });
+
+  describe('getByUserId', () => {
+    it('returns the career profile when found', async () => {
+      mockCareerProfileRepo.findByUserId.mockResolvedValue(mockCareerProfile);
+
+      const result = await service.getByUserId('user-uuid');
+
+      expect(mockCareerProfileRepo.findByUserId).toHaveBeenCalledWith(
+        'user-uuid'
+      );
+      expect(result.id).toBe('profile-uuid');
+    });
+
+    it('throws NotFoundException when profile does not exist', async () => {
+      mockCareerProfileRepo.findByUserId.mockResolvedValue(null);
+
+      await expect(service.getByUserId('user-uuid')).rejects.toThrow(
+        NotFoundException
+      );
+    });
+  });
 });

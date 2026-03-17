@@ -65,6 +65,14 @@ export class CareerProfileService {
     this.anthropic = new Anthropic({ apiKey: this.anthropicApiKey });
   }
 
+  async getByUserId(userId: string): Promise<CareerProfile> {
+    const profile = await this.careerProfileRepository.findByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('No career profile found.');
+    }
+    return profile;
+  }
+
   async extractFromSourceDocument(userId: string): Promise<CareerProfile> {
     const sourceDocument =
       await this.sourceDocumentRepository.findByUserId(userId);
