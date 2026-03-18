@@ -106,6 +106,10 @@ src/
 └── utils.ts              # Utility functions
 ```
 
+### Domain Model vs. Persistence Model
+
+The domain model and the persistence model are deliberately decoupled. During brainstorming and domain design, model entities in terms of aggregates, value objects, and typed properties — **not** in terms of database schema, JSONB columns, or Prisma models. Persistence is an implementation detail addressed separately during technical design.
+
 ### Design Patterns Used
 
 - **Dependency Injection**: Manual DI in `src/index.ts` with interface abstractions
