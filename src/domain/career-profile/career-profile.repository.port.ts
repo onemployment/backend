@@ -23,7 +23,18 @@ export interface CareerProfileUpsertData {
   professionalDevelopment: ProfessionalDevelopment;
 }
 
+export interface CareerProfileSectionsData {
+  userId: string;
+  experiences: ProfessionalExperience[];
+  education: Education[];
+  certifications: Certification[];
+  projects: Project[];
+  skills: Skills;
+  professionalDevelopment: ProfessionalDevelopment;
+}
+
 export interface ICareerProfileRepository {
   findByUserId(userId: string): Promise<CareerProfile | null>;
   upsert(data: CareerProfileUpsertData): Promise<CareerProfile>;
+  updateSections(data: CareerProfileSectionsData): Promise<CareerProfile>;
 }

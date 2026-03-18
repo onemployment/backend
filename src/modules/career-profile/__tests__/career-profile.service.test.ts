@@ -84,6 +84,7 @@ const mockCareerProfile: CareerProfile = {
 const mockCareerProfileRepo: jest.Mocked<ICareerProfileRepository> = {
   findByUserId: jest.fn(),
   upsert: jest.fn(),
+  updateSections: jest.fn(),
 };
 
 const mockSourceDocRepo: jest.Mocked<ISourceDocumentRepository> = {
