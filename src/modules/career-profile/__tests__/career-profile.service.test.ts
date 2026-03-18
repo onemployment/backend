@@ -220,6 +220,43 @@ describe('CareerProfileService', () => {
     );
   });
 
+  describe('updateSections', () => {
+    const sectionsData = {
+      experiences: mockExtractedData.experiences,
+      education: mockExtractedData.education,
+      certifications: mockExtractedData.certifications,
+      projects: mockExtractedData.projects,
+      skills: { backend: ['NestJS'] },
+      professionalDevelopment: mockExtractedData.professionalDevelopment,
+    };
+
+    it('throws NotFoundException when profile does not exist', async () => {
+      mockCareerProfileRepo.findByUserId.mockResolvedValue(null);
+
+      await expect(
+        service.updateSections('user-uuid', sectionsData)
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockCareerProfileRepo.updateSections).not.toHaveBeenCalled();
+    });
+
+    it('calls updateSections on repository and returns updated profile', async () => {
+      mockCareerProfileRepo.findByUserId.mockResolvedValue(mockCareerProfile);
+      mockCareerProfileRepo.updateSections.mockResolvedValue({
+        ...mockCareerProfile,
+        skills: { backend: ['NestJS'] },
+      });
+
+      const result = await service.updateSections('user-uuid', sectionsData);
+
+      expect(mockCareerProfileRepo.updateSections).toHaveBeenCalledWith({
+        userId: 'user-uuid',
+        ...sectionsData,
+      });
+      expect(result.skills).toEqual({ backend: ['NestJS'] });
+    });
+  });
+
   describe('getByUserId', () => {
     it('returns the career profile when found', async () => {
       mockCareerProfileRepo.findByUserId.mockResolvedValue(mockCareerProfile);

@@ -10,6 +10,7 @@ import {
   ICareerProfileRepository,
   CAREER_PROFILE_REPOSITORY,
 } from '../../domain/career-profile/career-profile.repository.port';
+import { UpdateCareerProfileDto } from './dto/update-career-profile.dto';
 import {
   ISourceDocumentRepository,
   SOURCE_DOCUMENT_REPOSITORY,
@@ -63,6 +64,25 @@ export class CareerProfileService {
     private readonly logger: ILoggerService
   ) {
     this.anthropic = new Anthropic({ apiKey: this.anthropicApiKey });
+  }
+
+  async updateSections(
+    userId: string,
+    dto: UpdateCareerProfileDto
+  ): Promise<CareerProfile> {
+    const existing = await this.careerProfileRepository.findByUserId(userId);
+    if (!existing) {
+      throw new NotFoundException('No career profile found.');
+    }
+    return this.careerProfileRepository.updateSections({
+      userId,
+      experiences: dto.experiences,
+      education: dto.education,
+      certifications: dto.certifications,
+      projects: dto.projects,
+      skills: dto.skills,
+      professionalDevelopment: dto.professionalDevelopment,
+    });
   }
 
   async getByUserId(userId: string): Promise<CareerProfile> {
