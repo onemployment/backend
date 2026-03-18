@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { SourceDocumentModule } from './modules/source-document/source-document.module';
 import { CareerProfileModule } from './modules/career-profile/career-profile.module';
+import { PersonalProfileModule } from './modules/personal-profile/personal-profile.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -18,6 +19,7 @@ import { HealthController } from './health.controller';
     UserModule,
     SourceDocumentModule,
     CareerProfileModule,
+    PersonalProfileModule,
   ],
   controllers: [HealthController],
 })
