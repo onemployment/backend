@@ -5,5 +5,5 @@ export class UpdateApplicationStatusDto {
   @IsIn(['draft', 'ready', 'applied'], {
     message: 'status must be one of: draft, ready, applied',
   })
-  status: string;
+  status!: string;
 }

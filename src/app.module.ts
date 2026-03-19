@@ -6,6 +6,7 @@ import { UserModule } from './modules/user/user.module';
 import { SourceDocumentModule } from './modules/source-document/source-document.module';
 import { CareerProfileModule } from './modules/career-profile/career-profile.module';
 import { PersonalProfileModule } from './modules/personal-profile/personal-profile.module';
+import { ApplicationModule } from './modules/application/application.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -20,6 +21,7 @@ import { HealthController } from './health.controller';
     SourceDocumentModule,
     CareerProfileModule,
     PersonalProfileModule,
+    ApplicationModule,
   ],
   controllers: [HealthController],
 })
