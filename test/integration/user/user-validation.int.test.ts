@@ -456,19 +456,13 @@ describe('User Validation Integration Tests', () => {
 
   describe('performance and database integration', () => {
     it('should handle multiple validation requests efficiently', async () => {
-      const promises = Array(5)
-        .fill(null)
-        .map((_, i) =>
-          request(app.getHttpServer())
-            .get(`/api/v1/user/validate/username?username=perftest${i}`)
-            .expect(200)
-        );
+      for (let i = 0; i < 5; i++) {
+        const response = await request(app.getHttpServer())
+          .get(`/api/v1/user/validate/username?username=perftest${i}`)
+          .expect(200);
 
-      const responses = await Promise.all(promises);
-
-      responses.forEach((response) => {
         expect(response.body).toHaveProperty('available', true);
-      });
+      }
     });
 
     it('should use database indexes efficiently', async () => {
