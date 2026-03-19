@@ -72,22 +72,45 @@ describe('PrismaApplicationRepository', () => {
   });
 
   describe('create', () => {
-    it('creates and returns a mapped application', async () => {
-      mockPrisma.application.create.mockResolvedValue(samplePrismaApp);
+    it('creates application as draft and returns mapped result', async () => {
+      const draftApp = { ...samplePrismaApp, status: 'draft', analysis: {} };
+      mockPrisma.application.create.mockResolvedValue(draftApp);
 
       const result = await repo.create({
         userId: 'user-id',
         company: 'Acme',
         roleTitle: 'Engineer',
         jobPostingText: 'Job text',
-        analysis: {
-          overallSignal: 'strong',
-          narrative: 'Great',
-          categories: [],
-        },
       });
 
-      expect(mockPrisma.application.create).toHaveBeenCalled();
+      expect(mockPrisma.application.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-id',
+          company: 'Acme',
+          roleTitle: 'Engineer',
+          jobPostingText: 'Job text',
+        },
+      });
+      expect(result.id).toBe('app-id');
+      expect(result.status).toBe('draft');
+    });
+  });
+
+  describe('updateAnalysis', () => {
+    it('sets analysis and transitions status to ready', async () => {
+      const analysis = {
+        overallSignal: 'strong' as const,
+        narrative: 'Great fit',
+        categories: [],
+      };
+      mockPrisma.application.update.mockResolvedValue(samplePrismaApp);
+
+      const result = await repo.updateAnalysis('app-id', 'user-id', analysis);
+
+      expect(mockPrisma.application.update).toHaveBeenCalledWith({
+        where: { id: 'app-id', userId: 'user-id' },
+        data: { analysis, status: 'ready' },
+      });
       expect(result.id).toBe('app-id');
     });
   });

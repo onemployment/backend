@@ -5,6 +5,7 @@ const mockApplicationRepo = {
   findAllByUserId: jest.fn(),
   findByIdAndUserId: jest.fn(),
   create: jest.fn(),
+  updateAnalysis: jest.fn(),
   updateStatus: jest.fn(),
 };
 
@@ -62,17 +63,23 @@ const sampleAnalysisResponse = {
   },
 };
 
-const sampleApplication = {
+const draftApplication = {
   id: 'app-id',
   userId: 'user-id',
   company: 'Acme Corp',
   roleTitle: 'Senior Engineer',
   jobPostingText: 'We are looking for...',
-  status: 'ready' as const,
-  analysis: sampleAnalysisResponse.analysis,
+  status: 'draft' as const,
+  analysis: null,
   appliedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+};
+
+const sampleApplication = {
+  ...draftApplication,
+  status: 'ready' as const,
+  analysis: sampleAnalysisResponse.analysis,
 };
 
 describe('ApplicationService', () => {
@@ -92,7 +99,7 @@ describe('ApplicationService', () => {
   });
 
   describe('create', () => {
-    it('calls Claude with job posting and profiles, creates and returns application', async () => {
+    it('saves as draft first, calls Claude, then updates with analysis to ready', async () => {
       mockCareerProfileRepo.findByUserId.mockResolvedValue(sampleCareerProfile);
       mockPersonalProfileRepo.findByUserId.mockResolvedValue(
         samplePersonalProfile
@@ -102,15 +109,13 @@ describe('ApplicationService', () => {
           { type: 'text', text: JSON.stringify(sampleAnalysisResponse) },
         ],
       });
-      mockApplicationRepo.create.mockResolvedValue(sampleApplication);
+      mockApplicationRepo.create.mockResolvedValue(draftApplication);
+      mockApplicationRepo.updateAnalysis.mockResolvedValue(sampleApplication);
 
       const result = await service.create('user-id', {
         jobPostingText: 'We are looking for a Senior Engineer...',
       });
 
-      expect(mockAnthropic.messages.create).toHaveBeenCalledWith(
-        expect.objectContaining({ model: 'claude-opus-4-6' })
-      );
       expect(mockApplicationRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'user-id',
@@ -118,7 +123,12 @@ describe('ApplicationService', () => {
           roleTitle: 'Senior Engineer',
         })
       );
-      expect(result.company).toBe('Acme Corp');
+      expect(mockApplicationRepo.updateAnalysis).toHaveBeenCalledWith(
+        'app-id',
+        'user-id',
+        sampleAnalysisResponse.analysis
+      );
+      expect(result.status).toBe('ready');
     });
 
     it('handles markdown-wrapped JSON response from Claude', async () => {
@@ -135,14 +145,17 @@ describe('ApplicationService', () => {
           },
         ],
       });
-      mockApplicationRepo.create.mockResolvedValue(sampleApplication);
+      mockApplicationRepo.create.mockResolvedValue(draftApplication);
+      mockApplicationRepo.updateAnalysis.mockResolvedValue(sampleApplication);
 
       await service.create('user-id', {
         jobPostingText: 'Job posting text here...',
       });
 
-      expect(mockApplicationRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ company: 'Acme Corp' })
+      expect(mockApplicationRepo.updateAnalysis).toHaveBeenCalledWith(
+        'app-id',
+        'user-id',
+        sampleAnalysisResponse.analysis
       );
     });
   });

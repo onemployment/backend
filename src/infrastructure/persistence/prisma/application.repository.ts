@@ -40,7 +40,20 @@ export class PrismaApplicationRepository implements ApplicationRepositoryPort {
         company: data.company,
         roleTitle: data.roleTitle,
         jobPostingText: data.jobPostingText,
-        analysis: (data.analysis ?? {}) as unknown as Prisma.InputJsonValue,
+      },
+    });
+    return ApplicationMapper.toDomain(record);
+  }
+
+  async updateAnalysis(
+    id: string,
+    userId: string,
+    analysis: Application['analysis']
+  ): Promise<Application> {
+    const record = await this.prisma.application.update({
+      where: { id, userId },
+      data: {
+        analysis: analysis as unknown as Prisma.InputJsonValue,
         status: 'ready',
       },
     });

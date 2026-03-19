@@ -5,13 +5,17 @@ export interface CreateApplicationData {
   company: string;
   roleTitle: string;
   jobPostingText: string;
-  analysis: Application['analysis'];
 }
 
 export interface ApplicationRepositoryPort {
   findAllByUserId(userId: string): Promise<Application[]>;
   findByIdAndUserId(id: string, userId: string): Promise<Application | null>;
   create(data: CreateApplicationData): Promise<Application>;
+  updateAnalysis(
+    id: string,
+    userId: string,
+    analysis: Application['analysis']
+  ): Promise<Application>;
   updateStatus(
     id: string,
     userId: string,

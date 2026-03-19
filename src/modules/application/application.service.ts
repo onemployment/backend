@@ -67,13 +67,18 @@ export class ApplicationService {
       analysis: Application['analysis'];
     };
 
-    return this.applicationRepo.create({
+    const application = await this.applicationRepo.create({
       userId,
       company: extracted.company,
       roleTitle: extracted.roleTitle,
       jobPostingText: dto.jobPostingText,
-      analysis: extracted.analysis,
     });
+
+    return this.applicationRepo.updateAnalysis(
+      application.id,
+      userId,
+      extracted.analysis
+    );
   }
 
   async findAllByUserId(userId: string): Promise<Application[]> {
